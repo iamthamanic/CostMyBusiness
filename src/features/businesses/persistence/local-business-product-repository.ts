@@ -20,6 +20,18 @@ import {
   type MarketingFunnel,
   type UpdateMarketingFunnelInput,
 } from '../../funnels/domain/marketing-funnel'
+import type { PlanningRepository } from '../../scenarios/application/planning-repository'
+import {
+  removeOverride,
+  setOverride,
+  wouldCreateCycle,
+} from '../../scenarios/application/resolve-context'
+import {
+  ScenarioCycleError,
+  type ProductPlanningState,
+  type Scenario,
+} from '../../scenarios/domain/planning'
+import { defaultPeriod, type PeriodType } from '@/core/periods'
 import { emptySnapshot, parseSnapshot, type LocalSnapshot } from './local-snapshot'
 
 export class LocalStoreCorruptError extends Error {
@@ -50,6 +62,7 @@ export type LocalRepositories = {
   businesses: BusinessRepository
   products: ProductRepository
   funnels: FunnelRepository
+  planning: PlanningRepository
   /** Test helper: last load error message (German) when corrupt. */
   getLastLoadErrorDe(): string | null
   reset(): void
@@ -124,6 +137,7 @@ export function createLocalRepositories(storage?: StorageLike): LocalRepositorie
       )
       snapshot.products = snapshot.products.filter((p) => p.businessId !== id)
       snapshot.funnels = snapshot.funnels.filter((f) => !removedProductIds.has(f.productId))
+      snapshot.planning = snapshot.planning.filter((p) => !removedProductIds.has(p.productId))
       save(snapshot)
     },
   }
@@ -184,6 +198,7 @@ export function createLocalRepositories(storage?: StorageLike): LocalRepositorie
       const snapshot = load()
       snapshot.products = snapshot.products.filter((p) => p.id !== id)
       snapshot.funnels = snapshot.funnels.filter((f) => f.productId !== id)
+      snapshot.planning = snapshot.planning.filter((p) => p.productId !== id)
       save(snapshot)
     },
   }
@@ -247,10 +262,141 @@ export function createLocalRepositories(storage?: StorageLike): LocalRepositorie
     },
   }
 
+  function emptyPlanning(productId: string): ProductPlanningState {
+    return {
+      productId,
+      period: defaultPeriod(),
+      activeContextId: 'actual',
+      actualValues: {},
+      budgetValues: {},
+      scenarios: [],
+      updatedAt: nowIso(),
+    }
+  }
+
+  function getPlanningOrCreate(snapshot: LocalSnapshot, productId: string): ProductPlanningState {
+    const existing = snapshot.planning.find((p) => p.productId === productId)
+    if (existing) return existing
+    const created = emptyPlanning(productId)
+    snapshot.planning.push(created)
+    return created
+  }
+
+  function writePlanning(snapshot: LocalSnapshot, state: ProductPlanningState): ProductPlanningState {
+    const index = snapshot.planning.findIndex((p) => p.productId === state.productId)
+    const next = { ...state, updatedAt: nowIso() }
+    if (index < 0) snapshot.planning.push(next)
+    else snapshot.planning[index] = next
+    save(snapshot)
+    return next
+  }
+
+  const planning: PlanningRepository = {
+    async getForProduct(productId) {
+      const snapshot = load()
+      const product = snapshot.products.find((p) => p.id === productId)
+      if (!product) throw new NotFoundError('Product', productId)
+      const state = getPlanningOrCreate(snapshot, productId)
+      save(snapshot)
+      return state
+    },
+    async save(state) {
+      const snapshot = load()
+      return writePlanning(snapshot, state)
+    },
+    async setActiveContext(productId, contextId) {
+      const snapshot = load()
+      const state = getPlanningOrCreate(snapshot, productId)
+      if (contextId !== 'actual' && contextId !== 'budget') {
+        if (!state.scenarios.some((s) => s.id === contextId)) {
+          throw new NotFoundError('Scenario', contextId)
+        }
+      }
+      return writePlanning(snapshot, { ...state, activeContextId: contextId })
+    },
+    async setPeriod(productId, period: PeriodType) {
+      const snapshot = load()
+      const state = getPlanningOrCreate(snapshot, productId)
+      return writePlanning(snapshot, { ...state, period })
+    },
+    async setBaseValue(productId, context, key, value) {
+      const snapshot = load()
+      const state = getPlanningOrCreate(snapshot, productId)
+      if (context === 'actual') {
+        return writePlanning(snapshot, {
+          ...state,
+          actualValues: { ...state.actualValues, [key]: value },
+        })
+      }
+      return writePlanning(snapshot, {
+        ...state,
+        budgetValues: { ...state.budgetValues, [key]: value },
+      })
+    },
+    async createScenario(productId, input) {
+      const snapshot = load()
+      const state = getPlanningOrCreate(snapshot, productId)
+      const scenarioId = newId('scn')
+      if (wouldCreateCycle(state, scenarioId, input.base)) {
+        throw new ScenarioCycleError(
+          'Szenario-Vererbung bildet einen Zyklus und wurde abgelehnt.',
+        )
+      }
+      if (input.base !== 'actual' && input.base !== 'budget') {
+        if (!state.scenarios.some((s) => s.id === input.base)) {
+          throw new NotFoundError('Scenario', input.base)
+        }
+      }
+      const scenario: Scenario = {
+        id: scenarioId,
+        name: input.name,
+        base: input.base,
+        overrides: input.overrides ?? {},
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
+      }
+      const next = writePlanning(snapshot, {
+        ...state,
+        scenarios: [...state.scenarios, scenario],
+        activeContextId: scenario.id,
+      })
+      return { state: next, scenario }
+    },
+    async setScenarioOverride(productId, scenarioId, key, value) {
+      const snapshot = load()
+      const state = getPlanningOrCreate(snapshot, productId)
+      if (!state.scenarios.some((s) => s.id === scenarioId)) {
+        throw new NotFoundError('Scenario', scenarioId)
+      }
+      return writePlanning(snapshot, setOverride(state, scenarioId, key, value))
+    },
+    async removeScenarioOverride(productId, scenarioId, key) {
+      const snapshot = load()
+      const state = getPlanningOrCreate(snapshot, productId)
+      if (!state.scenarios.some((s) => s.id === scenarioId)) {
+        throw new NotFoundError('Scenario', scenarioId)
+      }
+      return writePlanning(snapshot, removeOverride(state, scenarioId, key))
+    },
+    async deleteScenario(productId, scenarioId) {
+      const snapshot = load()
+      const state = getPlanningOrCreate(snapshot, productId)
+      const nextScenarios = state.scenarios.filter((s) => s.id !== scenarioId)
+      const activeContextId =
+        state.activeContextId === scenarioId ? 'actual' : state.activeContextId
+      return writePlanning(snapshot, {
+        ...state,
+        scenarios: nextScenarios,
+        activeContextId,
+      })
+    },
+  }
+
   return {
     businesses,
     products,
     funnels,
+    planning,
     getLastLoadErrorDe: () => lastLoadErrorDe,
     reset: () => clearLocalStore(storage),
   }

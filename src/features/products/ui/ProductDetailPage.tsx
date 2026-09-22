@@ -14,6 +14,7 @@ import {
   UnsupportedTemplateVersionError,
 } from '@/features/templates'
 import { MarketingFunnelsPanel } from '@/features/funnels'
+import { ContextPeriodChrome } from '@/features/scenarios'
 
 export function ProductDetailPage() {
   const { productId } = useParams()
@@ -89,6 +90,7 @@ export function ProductDetailPage() {
           Zurück zur Produktliste
         </Link>
       </div>
+      <ContextPeriodChrome productId={product.id} />
       <CostGraphWorkbench
         model={model}
         onModelChange={setModel}
