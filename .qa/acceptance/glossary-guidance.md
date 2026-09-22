@@ -30,3 +30,6 @@ Kontextuelle Glossar-Hilfe erklärt Domänenbegriffe inkl. Formel und Beispiel (
 
 ## Implementation Notes
 - Shipped terms.json; GlossaryHelp keyboard/tap; Glossary page route
+
+## Implementation Notes
+- Shipped terms.json; GlossaryHelp keyboard/tap; Glossary page route
