@@ -29,12 +29,15 @@ const nodeTypes = { marginNode: MarginNode } as NodeTypes
 type Props = {
   model: DomainModel
   onModelChange: (next: DomainModel) => void
+  /** Shipped template id for layer guidance (FR-022). */
+  templateId?: string
 }
 
-function WorkbenchInner({ model, onModelChange }: Props) {
+function WorkbenchInner({ model, onModelChange, templateId }: Props) {
   const evaluation = useMemo(() => evaluate(model), [model])
   const [nodes, setNodes] = useState<Node<FlowNodeData>[]>([])
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>('n-contribution')
+  const contributionNode = model.nodes.find((n) => n.key === 'contribution')
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(contributionNode?.id ?? null)
   const [layoutError, setLayoutError] = useState<string | null>(null)
 
   const mapped = useMemo(() => mapDomainToFlow(model, evaluation), [model, evaluation])
@@ -60,8 +63,9 @@ function WorkbenchInner({ model, onModelChange }: Props) {
     }
   }, [mapped])
 
-  const revenue = evaluation.results['n-revenue']
-  const contribution = evaluation.results['n-contribution']
+  const revenueNode = model.nodes.find((n) => n.key === 'revenue')
+  const revenue = revenueNode ? evaluation.results[revenueNode.id] : undefined
+  const contribution = contributionNode ? evaluation.results[contributionNode.id] : undefined
 
   const costPeriod = Object.values(evaluation.results)
     .filter((r) => {
@@ -144,6 +148,7 @@ function WorkbenchInner({ model, onModelChange }: Props) {
           results={evaluation.results}
           onModelChange={onModelChange}
           onSelectNode={setSelectedNodeId}
+          templateId={templateId}
         />
       </div>
     </div>
@@ -170,10 +175,10 @@ function Kpi({
   )
 }
 
-export function CostGraphWorkbench({ model, onModelChange }: Props) {
+export function CostGraphWorkbench({ model, onModelChange, templateId }: Props) {
   return (
     <ReactFlowProvider>
-      <WorkbenchInner model={model} onModelChange={onModelChange} />
+      <WorkbenchInner model={model} onModelChange={onModelChange} templateId={templateId} />
     </ReactFlowProvider>
   )
 }

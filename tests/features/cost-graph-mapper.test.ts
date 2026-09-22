@@ -12,6 +12,7 @@ describe('cost-graph mapper', () => {
       name: 'Test',
       currency: 'EUR',
       price: 50,
+      templateId: 'custom',
       createdAt: '2026-01-01T00:00:00.000Z',
       updatedAt: '2026-01-01T00:00:00.000Z',
     }
@@ -22,8 +23,9 @@ describe('cost-graph mapper', () => {
     expect(flow.nodes).toHaveLength(model.nodes.length)
     expect(flow.edges).toHaveLength(model.edges.length)
     expect(flow.nodes.every((n) => n.data.domainNodeId)).toBe(true)
-    // Domain model unchanged by mapping
-    expect(model.nodes[0]?.id).toBe('n-revenue')
-    expect(evaluation.results['n-contribution']?.value.status).toBe('ok')
+    const revenue = model.nodes.find((n) => n.key === 'revenue')
+    const contribution = model.nodes.find((n) => n.key === 'contribution')
+    expect(revenue?.id).toMatch(/revenue/)
+    expect(evaluation.results[contribution!.id]?.value.status).toBe('ok')
   })
 })

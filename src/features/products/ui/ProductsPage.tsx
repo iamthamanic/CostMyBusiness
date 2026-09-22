@@ -7,6 +7,12 @@ import { Link, useParams } from 'react-router-dom'
 import { useRepos, useWorkspaceId } from '@/app/providers/ReposProvider'
 import type { Business } from '@/features/businesses'
 import type { Product } from '@/features/products'
+import {
+  TemplatePicker,
+  type TemplatePickerValue,
+  getShippedTemplate,
+  defaultIncludedOptionalKeys,
+} from '@/features/templates'
 import { Button, Field } from '@/shared/ui'
 
 type LoadState = 'loading' | 'ready' | 'error' | 'empty'
@@ -22,6 +28,13 @@ export function ProductsPage() {
   const [name, setName] = useState('')
   const [currency, setCurrency] = useState('EUR')
   const [price, setPrice] = useState('0')
+  const [templatePick, setTemplatePick] = useState<TemplatePickerValue>(() => {
+    const custom = getShippedTemplate('custom')
+    return {
+      templateId: 'custom',
+      includedOptionalKeys: defaultIncludedOptionalKeys(custom),
+    }
+  })
   const [formError, setFormError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -75,6 +88,13 @@ export function ProductsPage() {
       setFormError('Preis muss eine nicht-negative Zahl sein.')
       return
     }
+    let templateVersion: number
+    try {
+      templateVersion = getShippedTemplate(templatePick.templateId).version
+    } catch {
+      setFormError('Unbekannte oder nicht unterstützte Vorlage.')
+      return
+    }
     setSaving(true)
     try {
       await repos.products.create({
@@ -82,6 +102,9 @@ export function ProductsPage() {
         name: name.trim(),
         currency,
         price: priceNumber,
+        templateId: templatePick.templateId,
+        templateVersion,
+        includedOptionalKeys: templatePick.includedOptionalKeys,
       })
       setName('')
       await reloadProducts()
@@ -104,7 +127,7 @@ export function ProductsPage() {
       <header>
         <h1 className="text-2xl font-semibold">Produkte</h1>
         <p className="text-sm text-[color:var(--ink-muted)]">
-          Produkte gehören zu einem Unternehmen und öffnen später die Workbench.
+          Produkte gehören zu einem Unternehmen und öffnen die Workbench mit Branchenvorlage.
         </p>
       </header>
 
@@ -165,6 +188,9 @@ export function ProductsPage() {
                 hint={`Einheit: ${currency} / Stück`}
               />
             </div>
+            <div className="mt-4">
+              <TemplatePicker value={templatePick} onChange={setTemplatePick} />
+            </div>
             {formError ? (
               <p className="mt-2 text-sm text-[color:var(--semantic-cost)]" role="alert">
                 {formError}
@@ -186,7 +212,9 @@ export function ProductsPage() {
           {state === 'empty' ? (
             <div className="rounded-[12px] border border-dashed border-[color:var(--line-default)] p-6 text-center">
               <p className="font-medium">Noch keine Produkte</p>
-              <p className="text-sm text-[color:var(--ink-muted)]">Legen Sie Ihr erstes Produkt an.</p>
+              <p className="text-sm text-[color:var(--ink-muted)]">
+                Legen Sie Ihr erstes Produkt aus einer Branchenvorlage an.
+              </p>
             </div>
           ) : null}
           {state === 'ready' ? (
@@ -200,6 +228,7 @@ export function ProductsPage() {
                     <p className="font-medium">{product.name}</p>
                     <p className="text-xs text-[color:var(--ink-muted)]">
                       {product.price ?? 0} {product.currency} / Stück
+                      {product.templateId ? ` · Vorlage ${product.templateId}` : ''}
                     </p>
                   </div>
                   <div className="flex gap-2">

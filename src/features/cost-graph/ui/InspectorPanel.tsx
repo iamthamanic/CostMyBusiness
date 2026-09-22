@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react'
 import { FormulaError, parseFormula } from '@/core/formulas'
 import type { CostBehavior, DomainModel, NodeResult } from '@/core/model'
+import { getLayerGuidance, LayerGuidancePanel } from '@/features/templates'
 import { Button, Field } from '@/shared/ui'
 import {
   COST_BEHAVIOR_OPTIONS,
@@ -24,6 +25,7 @@ type Props = {
   results: Record<string, NodeResult>
   onModelChange: (next: DomainModel) => void
   onSelectNode: (nodeId: string | null) => void
+  templateId?: string
 }
 
 export function InspectorPanel({
@@ -32,6 +34,7 @@ export function InspectorPanel({
   results,
   onModelChange,
   onSelectNode,
+  templateId,
 }: Props) {
   if (!selectedNodeId) {
     return (
@@ -56,10 +59,20 @@ export function InspectorPanel({
 
   const optional = isOptionalCostNode(node)
   const behaviorMeta = COST_BEHAVIOR_OPTIONS.find((o) => o.value === node.costBehavior)
+  const resolvedLayerKey =
+    node.key === 'g_operations'
+      ? 'operations'
+      : node.key === 'g_acquisition'
+        ? 'acquisition'
+        : undefined
+  const guidance =
+    templateId && resolvedLayerKey ? getLayerGuidance(templateId, resolvedLayerKey) : null
 
   return (
     <aside className="flex flex-col gap-3 rounded-[12px] border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] p-4">
       <h2 className="text-lg font-medium">Inspector</h2>
+
+      {guidance ? <LayerGuidancePanel layerLabel={node.label} guidance={guidance} /> : null}
 
       <Field
         label="Name"
