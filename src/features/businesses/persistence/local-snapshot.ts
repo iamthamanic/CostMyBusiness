@@ -1,21 +1,23 @@
 /**
- * Combined Zod-validated local snapshot for businesses + products.
+ * Combined Zod-validated local snapshot for businesses + products + funnels.
  * Location: src/features/businesses/persistence/local-snapshot.ts
  */
 import { z } from 'zod'
 import { BusinessSchema } from '../domain/business'
 import { ProductSchema } from '../../products/domain/product'
+import { MarketingFunnelSchema } from '../../funnels/domain/marketing-funnel'
 
 export const LocalSnapshotSchema = z.object({
   version: z.literal(1),
   businesses: z.array(BusinessSchema),
   products: z.array(ProductSchema),
+  funnels: z.array(MarketingFunnelSchema).default([]),
 })
 
 export type LocalSnapshot = z.infer<typeof LocalSnapshotSchema>
 
 export function emptySnapshot(): LocalSnapshot {
-  return { version: 1, businesses: [], products: [] }
+  return { version: 1, businesses: [], products: [], funnels: [] }
 }
 
 export function parseSnapshot(raw: unknown): LocalSnapshot {
