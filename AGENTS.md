@@ -74,54 +74,86 @@ Stable IDs must never depend on translated labels.
 - Required states: loading, empty, invalid, unsaved, saving, save-failed, disabled, focus and selected where applicable.
 - Target WCAG 2.2 AA.
 
-## Security checklist
+## Validation
 
-### Frontend
+- **Checks:** `npm run checks` (lint + typecheck + unit tests + build + `npm audit --audit-level=high` once `package.json` exists)
+- **Dev:** `npm run dev` → http://localhost:5173
+- **E2E:** `npm run test:e2e` (Playwright via `@verify-ui` when ready)
 
-- No secrets or privileged API keys in client bundles.
-- Validate user input before persistence/domain boundary use.
-- Render user labels as text, not raw HTML.
-- No auth/session secrets in localStorage.
-- State-changing authenticated requests must use the security properties of the chosen auth architecture.
+Run checks before push. Do not bypass hooks.
 
-### Backend/persistence
+## Issue Template (verbindlich)
 
-- Do not build custom authentication primitives when managed auth is available.
-- Enforce owner/workspace authorization at the database/server boundary.
-- Supabase user-owned tables require RLS.
-- Use parameterized/SDK queries; no raw SQL string concatenation with user input.
-- Unknown/unauthorized resources deny by default.
-- Never trust client-supplied identity fields as authorization proof.
+Alle Issues folgen dem kanonischen Template aus **`@issue-contract`**
+(global: `~/.claude/skills/issue-contract/references/issue-template.md`).
+Projekt-Override (nur bei Bedarf): `.qa/issue-template.md`.
+Projekt-Werte: `.qa/project.yaml` → `issueContract`.
 
-### Formula engine
+Pflicht-Sektionen in Reihenfolge: `Type → Intent → Goal → Non-Goals → Context → Scope → User Journey → Runtime → Security & Data → Edge Cases → Acceptance → Blockers → Runner`.
 
-- Formula text is hostile input.
-- Parse to an AST and validate symbols/functions.
-- No JavaScript execution.
-- Detect dependency cycles.
-- Handle divide-by-zero, unknown symbols, missing dependencies and invalid results explicitly.
+## Security Checklist (Secure by Default)
 
-### Practical security
+Diese Checkliste ist für alle Agents verbindlich. Jede Feature-Implementierung muss die zutreffenden Sektionen abhaken. `@implement` dokumentiert Coverage in der Acceptance-Datei; `@audit-changes` / `@ecc-check` führen diff-scoped Probes aus; hop-chains zusätzlich über `@composition-gate` (FLAGGED muss gefixt werden).
 
-- No secrets in logs/errors.
-- Dependency audit in CI before release.
-- Secure cookies/session defaults in production.
-- Do not log financial values or formula contents to product analytics by default.
+### Frontend Security
 
-Critical security violations block acceptance.
+| # | Maßnahme | Fail if |
+|---|----------|---------|
+| F-01 | HTTPS überall | App läuft ohne TLS oder mixed content |
+| F-02 | Input-Validierung & Sanitization | Unvalidierter User-Input erreicht Render-/State-Schicht |
+| F-03 | Keine sensiblen Daten im Browser | `localStorage.setItem('token'\|'secret'\|'password', …)` im Diff |
+| F-04 | CSRF-Schutz | State-changing Request ohne CSRF-Token oder SameSite-Cookie |
+| F-05 | API-Keys nie im Frontend | Secrets in Client-Bundle, privileged keys in `VITE_*` |
+
+### Backend Security
+
+| # | Maßnahme | Fail if |
+|---|----------|---------|
+| B-01 | Authentication Fundamentals | Eigenbau-Auth, Plaintext- oder schwache/unsalted Hashes |
+| B-02 | Authorization Checks | Sensitive Operation ohne Owner-/Workspace-Check |
+| B-03 | API-Endpoint-Schutz | Unauthentifizierter Zugriff auf geschützte Ressource |
+| B-04 | SQL-Injection-Prävention | String-Konkatenation in SQL mit User-Input |
+| B-05 | Basis Security Headers | Headers fehlen oder `unsafe-inline`/`unsafe-eval` ohne Removal-Plan |
+| B-06 | DDoS-Schutz | Rate-Limiting deaktiviert, kein Edge-Protection-Layer |
+| B-07 | Least-privilege assignment | Actor kann mehr vergeben als er hält |
+| B-08 | Deny-by-default AuthZ map | Unbekannter Pfad → Default-Allow statt deny |
+| B-09 | Trust-boundary identity | User-ID/Rollen aus Client-Headern als AuthZ-Beweis |
+| B-10 | Secrets fail-closed | `process.env.SECRET \|\| 'default-…'` |
+
+### Practical Security Habits
+
+| # | Maßnahme | Fail if |
+|---|----------|---------|
+| P-01 | Dependencies aktuell | `npm audit --audit-level=high` zeigt offene High/Critical |
+| P-02 | Korrekte Fehlerbehandlung | Error-Response enthält Stack-Trace, Secrets, Finanzwerte oder Formeln |
+| P-03 | Secure Cookies | Session-Cookie ohne HttpOnly oder ohne Secure in Prod |
+| P-04 | File-Upload-Sicherheit | Upload ohne Type/Size-Validierung (V1: keine Uploads) |
+| P-05 | Rate Limiting | Auth-Endpoint ohne Rate-Limit |
+| P-06 | Side-effect jobs / Outbox | N identische externe Sends; nicht-atomarer Worker-Claim |
+
+### Formula engine (project-specific)
+
+| # | Maßnahme | Fail if |
+|---|----------|---------|
+| FE-01 | Restricted AST only | `eval` / `new Function` / JS execution of user formula |
+| FE-02 | Cycle detection | Cyclic formula/graph dependency is saved or loops |
+| FE-03 | Unresolved results | Infinity/NaN shown as a normal number |
+| FE-04 | No secret leakage | Formula text or financial values logged to analytics by default |
+
+Critical-Verstöße (F-03, B-01, B-04, B-07, B-08, B-09, B-10, P-04, FE-01) blocken PR/READY.
 
 ## QA pipeline
 
 ```text
-@pingpong-solution -> @implement -> @verify-ticket -> @verify-ui -> @review-ticket -> @ecc-check
+@pingpong-solution -> @implement -> @verify-ticket -> @composition-gate -> @verify-ui -> @review-ticket -> @ecc-check
 ```
 
-Project QA paths:
-
-- `.qa/project.yaml`
-- `.qa/design/`
-- `.qa/acceptance/`
-- `.qa/edge-cases.md`
+- Design artifacts: `.qa/design/`
+- Acceptance: `.qa/acceptance/` (auto-generated by `@implement`)
+- Project config: `.qa/project.yaml`
+- Issue template: `@issue-contract`
+- Living docs: `@memory-live-doc`
+- Composition: `@composition-gate` — hop-chain meaning. **FLAGGED findings must be fixed** before review ACCEPT / ecc-check READY / PR.
 
 ## Implementation order
 
@@ -136,6 +168,39 @@ Follow the PRD vertical slices unless a later approved design supersedes them:
 7. Persistence/auth.
 8. Performance/accessibility/security polish.
 
+Locked delivery decisions for the coding queue (see `.qa/design/v1-mvp-delivery.md`):
+
+- Host: **Vercel** static SPA (Q-001).
+- Persistence: **local adapter first**, Supabase Auth/Postgres/RLS before V1 release (Q-002).
+- Money: **`decimal.js`**, HALF_UP, currency ISO 4217 default **EUR**.
+- Templates/glossary: versioned in repo under `src/data/**` (A-003).
+
+## Development Workflow
+
+### Context compact & long queues (mandatory)
+
+Auto-compact is **unreliable** (often mid-ticket, drops paths/partial state). Do **not** wait for the window to hard-fail.
+
+**After every shipped issue** in a multi-ticket loop (`@ecc-runner-loop` or any N>1 queue):
+
+1. Update the handoff file with: last merged issue/PR/SHA, next issue number + title. Set `paused: false` only if continuing immediately after compact in the same chat.
+2. **Stop the turn** and tell the user to run `/compact` (or open a fresh chat and continue with the handoff). Prefer `@strategic-compact`. Do **not** claim the next issue in the same turn.
+3. Resume the next ticket only **after** the user continues post-compact (or in the new chat with handoff loaded).
+
+**Never compact mid-implementation** of the current issue (verify → PR → merge must stay in one context).
+
+**Never** treat leftover CI poll / babysit timeouts as blockers; only open PRs and current default-branch HEAD matter.
+
+## Living documentation
+
+After material changes, run `@memory-live-doc` (or rely on `@implement` / `@ecc-check` / `@commit-push-safe` / `@project-setup` integration).
+
+- Do not invent features in docs without evidence.
+- Storage: `.project-memory/` (bilingual DE+EN JSON; human docs under `docs/` + `docs/en/`).
+- Interactive viewer: `docs/memory-live-doc/` (local `/memory-live-doc/`; GitHub Pages/Sites opt-in only).
+- Open locally: `@memory-live-doc serve` → `http://127.0.0.1:8765/memory-live-doc/`.
+- First setup: `@project-setup` Step 9 or `@memory-live-doc bootstrap`.
+
 ## Done means
 
 - Acceptance criteria have evidence.
@@ -144,3 +209,4 @@ Follow the PRD vertical slices unless a later approved design supersedes them:
 - Architecture boundaries remain intact.
 - No critical security findings.
 - Relevant documentation is updated.
+- `@composition-gate` is CLEAR or SKIPPED for the shipped HEAD.

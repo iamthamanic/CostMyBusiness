@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "name": "CostMyBusiness",
+  "summary_de": "Persönliche Profitabilitäts-Workbench für Produkte und Services mit Kostengraph, Funnels, Formeln, Templates und Actual/Budget/Scenario.",
+  "summary_en": "Personal profitability modeling workbench for products and services with cost graph, funnels, formulas, templates, and Actual/Budget/Scenario.",
+  "stack": ["TypeScript", "React", "Vite", "Tailwind", "shadcn/ui", "Zustand", "Supabase"],
+  "status": "documentation-first",
+  "review_status": "needs-review"
+}

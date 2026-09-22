@@ -1,0 +1,8 @@
+flowchart TD
+  App[app composition] --> Features[vertical feature slices]
+  Features --> Core[shared domain core]
+  Features --> Shared[shared UI / infra]
+  Features --> Persist[persistence adapters]
+  Core --> Money[money / periods]
+  Core --> Calc[calculation]
+  Core --> Formulas[formulas AST]

@@ -1,0 +1,16 @@
+# ECC runner / feature-intake profile for CostMyBusiness
+stackProfile: vite-react
+locale: de
+defaultPriority: P0
+appRoot: .
+devUrl: http://localhost:5173
+checksCommand: npm run checks
+issueLabels:
+  - P0
+  - P1
+  - P2
+  - needs-design
+  - agent-ready
+queue:
+  # Pick only agent-ready unless explicitly overridden
+  requireAgentReady: true

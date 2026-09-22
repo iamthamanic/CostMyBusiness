@@ -1,0 +1,262 @@
+{
+  "epicSlug": "v1-mvp-delivery",
+  "designPath": ".qa/design/v1-mvp-delivery.md",
+  "defaultLabels": [],
+  "issues": [
+    {
+      "title": "01 Bootstrap Vite React TypeScript app shell",
+      "featureSlug": "bootstrap-vite-app",
+      "priority": "P0",
+      "labels": [
+        "P0",
+        "agent-ready"
+      ],
+      "dependsOn": [],
+      "body": "## Type\nchore\n\n## Intent\nDas Repo bekommt eine lauffähige Vite+React+TypeScript-App mit Tailwind, path aliases und `npm run checks`, damit alle späteren Slices einen App-Root haben.\n\n## Goal\n`npm run dev` starts on http://localhost:5173; `npm run checks` runs lint, tsc --noEmit, vitest, build, and npm audit --audit-level=high.\n\n## Non-Goals\n- No business UI beyond a German placeholder shell\n- No Supabase, React Flow, or domain logic\n- No DaisyUI / Next.js\n\n## Context\n- Existing: `PRD.md` §14, `ARCHITECTURE.md` §3, `AGENTS.md` stack table\n- Reuse: none (greenfield code)\n- Links: `.qa/design/v1-mvp-delivery.md`\n\n## Scope\nIn:\n- `package.json`, `vite.config.ts`, `tsconfig*.json`, `index.html`\n- `src/app/**`, `src/main.tsx`, `src/shared/ui/` (empty index OK)\n- `eslint`/`prettier` configs, `scripts/run-checks.sh`, `.env.example`\nOut:\n- `src/core/**`, `src/features/**`, `supabase/**`\n\n## Security & Data\n- No secrets in repo; `.env.example` documents only public Vite vars for later\n- Secure-by-Default: P-01 (audit in checks)\n\n## Edge Cases\n- Missing Node 20+ fails with clear engine message in README\n- `checks` fails closed if any step fails\n\n## Acceptance\n- [ ] Vite React TS app boots; German placeholder page at `/`\n- [ ] Tailwind + path alias `@/` → `src/` configured\n- [ ] `npm run checks` = lint + typecheck + vitest + build + `npm audit --audit-level=high`\n- [ ] Touched files: zero type escape hatches (typed-strict / Boy Scout)\n\n## Runner\nLabels: P0, agent-ready\nFeature slug: `bootstrap-vite-app`\nDesign: .qa/design/v1-mvp-delivery.md"
+    },
+    {
+      "title": "02 Core money and period normalization",
+      "featureSlug": "core-money-periods",
+      "priority": "P0",
+      "labels": [
+        "P0",
+        "agent-ready"
+      ],
+      "dependsOn": [
+        "01 Bootstrap Vite React TypeScript app shell"
+      ],
+      "body": "## Type\nfeature\n\n## Intent\nReine Domain-Module für Geld und Perioden, damit alle Berechnungen decimal-sicher und period-korrekt sind (FR-029, FR-030, BR-003).\n\n## Goal\n`src/core/money` and `src/core/periods` exist as pure TS with deterministic unit tests; no React imports.\n\n## Non-Goals\n- No UI formatting components\n- No FX rates / multi-currency conversion beyond mismatch rejection\n- No persistence\n\n## Context\n- Existing: `ARCHITECTURE.md` §5 money/periods\n- Decision: `decimal.js`, HALF_UP display 2 dp, internal ≥8, default currency EUR\n- Links: `.qa/design/v1-mvp-delivery.md`\n\n## Scope\nIn:\n- `src/core/money/**`\n- `src/core/periods/**`\n- `tests/core/money*`, `tests/core/periods*`\nOut:\n- Any `features/**` or React files\n\n## Security & Data\n- No secrets\n- Secure-by-Default: none beyond typed inputs\n\n## Edge Cases\n- Mixed-currency aggregation throws typed error (C-04)\n- Period conversion refuses naive divide for hourly/annual-fixed without rule\n\n## Acceptance\n- [ ] `Money`/`DecimalValue` API hides floats; uses decimal.js; EUR default\n- [ ] Period types Day|Week|Month|Quarter|Year; Month default helper\n- [ ] Vitest covers rounding, mismatch, and at least one native-basis conversion\n- [ ] Touched files: zero type escape hatches (typed-strict / Boy Scout)\n\n## Runner\nLabels: P0, agent-ready\nFeature slug: `core-money-periods`\nDesign: .qa/design/v1-mvp-delivery.md"
+    },
+    {
+      "title": "03 Core domain model and calculation engine",
+      "featureSlug": "core-calculation-model",
+      "priority": "P0",
+      "labels": [
+        "P0",
+        "agent-ready"
+      ],
+      "dependsOn": [
+        "02 Core money and period normalization"
+      ],
+      "body": "## Type\nfeature\n\n## Intent\nDomain-Graph (Nodes/Edges) und reiner Calculator liefern per-unit und Periodenergebnisse mit Provenance und unresolved statt NaN (FR-002, FR-005–007, FR-016, BR-001, BR-002).\n\n## Goal\nGiven a fixture model, `evaluate(model, context)` returns typed results with direct vs allocated provenance hooks and cycle rejection.\n\n## Non-Goals\n- No React Flow\n- No formulas parser (next issue; allow placeholder formulaRef)\n- No funnels/scenarios UI\n\n## Context\n- Existing: `src/core/money`, `src/core/periods`\n- Reuse: Money/Period types\n- Links: PRD SCN-002, SCN-004, SCN-006, SCN-013\n\n## Scope\nIn:\n- `src/core/model/**`\n- `src/core/calculation/**`\n- `tests/core/calculation*` + fixture under `tests/fixtures/`\nOut:\n- `src/core/formulas/**` (stub interface only if needed)\n- UI\n\n## Security & Data\n- Pure functions only; no browser APIs\n- Secure-by-Default: none\n\n## Edge Cases\n- Cycle in edges → typed error, no loop (BR-001)\n- Missing input → UnresolvedResult, never Infinity/NaN in values (G-03, C-01)\n\n## Acceptance\n- [ ] Domain node/edge types with stable IDs (not label-derived)\n- [ ] Deterministic evaluate + Vitest fixture for per-unit and period totals\n- [ ] Cycle and unresolved paths covered by tests\n- [ ] Touched files: zero type escape hatches (typed-strict / Boy Scout)\n\n## Runner\nLabels: P0, agent-ready\nFeature slug: `core-calculation-model`\nDesign: .qa/design/v1-mvp-delivery.md"
+    },
+    {
+      "title": "04 Restricted formula engine AST parse and evaluate",
+      "featureSlug": "core-formula-engine",
+      "priority": "P0",
+      "labels": [
+        "P0",
+        "agent-ready"
+      ],
+      "dependsOn": [
+        "03 Core domain model and calculation engine"
+      ],
+      "body": "## Type\nfeature\n\n## Intent\nSichere Formelsprache zum Anzeigen/Editieren von Defaults ohne JavaScript-Execution (FR-023–025, FR-024, FE-01).\n\n## Goal\nParser/evaluator supports only `+ - * / % () SUM AVG MIN MAX ROUND IF`; rejects unsafe input; integrates with calculation via formulaRef.\n\n## Non-Goals\n- No formula editor UI (later workbench)\n- No user-defined custom functions\n- No spreadsheet compatibility beyond listed ops\n\n## Context\n- Existing: `src/core/calculation`\n- Locked surface: ARCHITECTURE.md §5 formulas\n- Links: SCN-018, SCN-019\n\n## Scope\nIn:\n- `src/core/formulas/**`\n- `tests/core/formulas*`\n- Wire calculation to call evaluator when formula present\nOut:\n- Feature UI, Monaco/editor packages\n\n## Security & Data\n- Hostile input: no eval/new Function; FE-01…FE-03\n- Secure-by-Default: F-02 at domain boundary\n\n## Edge Cases\n- `alert(1)`, `window.`, backticks, imports → reject\n- Divide by zero → Unresolved\n- Unknown symbol → Unresolved\n- Cyclic formula deps → reject (C-03)\n\n## Acceptance\n- [ ] Parse→AST→evaluate for allowed ops/functions with Vitest matrix\n- [ ] Security tests prove eval/new Function paths absent and unsafe strings rejected\n- [ ] Reset-to-default supported at data level (`source: default|custom`)\n- [ ] Touched files: zero type escape hatches (typed-strict / Boy Scout)\n\n## Runner\nLabels: P0, agent-ready\nFeature slug: `core-formula-engine`\nDesign: .qa/design/v1-mvp-delivery.md"
+    },
+    {
+      "title": "05 Core metrics registry and allocation provenance",
+      "featureSlug": "core-metrics-allocation",
+      "priority": "P0",
+      "labels": [
+        "P0",
+        "agent-ready"
+      ],
+      "dependsOn": [
+        "03 Core domain model and calculation engine"
+      ],
+      "body": "## Type\nfeature\n\n## Intent\nUniverselle Metrik-IDs und Allokationsstrategien halten Direct vs Allocated getrennt (FR-006, BR-006, FR-015 Should prep).\n\n## Goal\nMetric registry + allocation strategies produce inspectable provenance; break-even helper available when inputs valid.\n\n## Non-Goals\n- No industry-specific metrics in core (templates later)\n- No chart UI\n\n## Context\n- Existing: calculation engine\n- Metrics list: ARCHITECTURE.md §5 metrics\n- Allocation: per unit/order/customer/FTE/hour/percentage/custom driver\n\n## Scope\nIn:\n- `src/core/metrics/**`\n- `src/core/allocation/**`\n- tests for provenance + break-even\nOut:\n- Template JSON, UI\n\n## Security & Data\n- No secrets\n- Secure-by-Default: none\n\n## Edge Cases\n- Allocation with zero driver quantity → Unresolved, not silent zero profit lie\n- Fully loaded total still exposes direct and allocated parts\n\n## Acceptance\n- [ ] Stable metric IDs for revenue, CTR, CPC, CVR, CPA, CAC, contribution, margins, fullyLoadedProfit, breakEvenUnits\n- [ ] Allocation result includes source pool + rule; Vitest proves direct≠allocated collapse\n- [ ] Break-even helper returns formula inputs when valid else Unresolved\n- [ ] Touched files: zero type escape hatches (typed-strict / Boy Scout)\n\n## Runner\nLabels: P0, agent-ready\nFeature slug: `core-metrics-allocation`\nDesign: .qa/design/v1-mvp-delivery.md"
+    },
+    {
+      "title": "06 Workspace business product ports and local adapter",
+      "featureSlug": "local-repo-ports",
+      "priority": "P0",
+      "labels": [
+        "P0",
+        "agent-ready"
+      ],
+      "dependsOn": [
+        "03 Core domain model and calculation engine"
+      ],
+      "body": "## Type\nfeature\n\n## Intent\nRepository-Ports und Local-Adapter speichern Workspace/Business/Product/Model lokal, damit UI und spätere Supabase-Adapter dieselbe Contract-API nutzen (FR-001, Q-002).\n\n## Goal\nApplication can create/list/get/update businesses and products via ports; local adapter persists to localStorage key `cmb.v1` with Zod validation.\n\n## Non-Goals\n- No Supabase\n- No auth UI\n- No React Flow\n\n## Context\n- Existing: core model types\n- Structure: `features/businesses`, `features/products` application+persistence\n- Links: PRD entity table §11\n\n## Scope\nIn:\n- `src/features/businesses/**`\n- `src/features/products/**` (domain+application+persistence local)\n- `src/shared/infrastructure/local-store.ts`\n- Vitest for adapter CRUD\nOut:\n- `integrations/supabase/**`\n- Graph UI\n\n## User Journey\n1. (Dev/test) create business „Demo GmbH“ and product „Produkt A“\n2. System persists via local adapter\n3. Reload page → same entities load\n\n## Security & Data\n- Validate with Zod before write; F-02\n- No tokens in localStorage (F-03)\n- Secure-by-Default: F-02, F-03\n\n## Edge Cases\n- Corrupt localStorage → fail closed with empty store + German error flag\n- Cross-business product IDs never returned from wrong business getter\n\n## Acceptance\n- [ ] Ports: create/list/get/update/delete Business & Product; Product.currency defaults EUR\n- [ ] Local adapter round-trips fixture; Zod rejects invalid payloads\n- [ ] Feature public API only via `index.ts`\n- [ ] Touched files: zero type escape hatches (typed-strict / Boy Scout)\n\n## Runner\nLabels: P0, agent-ready\nFeature slug: `local-repo-ports`\nDesign: .qa/design/v1-mvp-delivery.md"
+    },
+    {
+      "title": "07 Businesses and products German CRUD UI",
+      "featureSlug": "businesses-products-ui",
+      "priority": "P0",
+      "labels": [
+        "P0",
+        "agent-ready"
+      ],
+      "dependsOn": [
+        "01 Bootstrap Vite React TypeScript app shell",
+        "06 Workspace business product ports and local adapter"
+      ],
+      "body": "## Type\nfeature\n\n## Intent\nNutzer legen Businesses und Produkte auf Deutsch an und öffnen sie (FR-001, J-001 partial).\n\n## Goal\nRoutes Overview/Businesses/Products work with empty/loading/error/saved states per DESIGN.md; German copy.\n\n## Non-Goals\n- No cost graph yet\n- No templates picker (placeholder CTA OK)\n- No auth\n\n## Context\n- Existing: local ports, app shell\n- Nav labels: Overview, Businesses, Products, Scenarios, Templates, Glossary, Settings (stubs OK for later)\n- Styleguide: `docs/UI_STYLEGUIDE.md`\n\n## Scope\nIn:\n- `src/features/businesses/ui/**`, `src/features/products/ui/**`\n- `src/app/router/**`, layouts\n- shadcn primitives as needed under `src/shared/ui/`\nOut:\n- Graph, funnels, scenarios features\n\n## User Journey\n1. Nutzer öffnet Businesses und legt „Demo GmbH“ an\n2. Legt Produkt „Absperrung Standard“ mit Währung EUR an\n3. Öffnet Produkt → Platzhalter-Workbench-Route sichtbar\n\n## Security & Data\n- Render labels as text only (XSS)\n- Secure-by-Default: F-02\n\n## Edge Cases\n- Empty workspace shows German empty state + CTA\n- Delete requires confirmation; cancel leaves data\n\n## Acceptance\n- [ ] User can create ≥2 businesses and multiple products scoped correctly (SCN-001)\n- [ ] Required UI states for list/create forms; units/currency shown on price fields\n- [ ] Desktop 1280 and mobile 390 layouts usable without canvas\n- [ ] Touched files: zero type escape hatches (typed-strict / Boy Scout)\n\n## Runner\nLabels: P0, agent-ready\nFeature slug: `businesses-products-ui`\nDesign: .qa/design/v1-mvp-delivery.md"
+    },
+    {
+      "title": "08 Cost graph mapper React Flow workbench and drill-down",
+      "featureSlug": "workbench-graph-ui",
+      "priority": "P0",
+      "labels": [
+        "P0",
+        "agent-ready"
+      ],
+      "dependsOn": [
+        "04 Restricted formula engine AST parse and evaluate",
+        "05 Core metrics registry and allocation provenance",
+        "07 Businesses and products German CRUD UI"
+      ],
+      "body": "## Type\nfeature\n\n## Intent\nProdukt-Workbench zeigt Margin-Spine-Graph aus Domain-Modell mit Auto-Layout und Drill-down (FR-003, FR-008, FR-032, SCN-007, SCN-025).\n\n## Goal\nOpening a product shows React Flow graph mapped from domain nodes/edges; inspector shows drill-down; mobile uses hierarchy list, not tiny canvas.\n\n## Non-Goals\n- No manual edge drawing as primary UX\n- No funnel filter UI yet\n- No scenario compare\n\n## Context\n- Locked: `@xyflow/react` + `elkjs`; domain is SoR\n- DESIGN.md §4 workbench layout\n- Fixture model if template not ready: minimal revenue→ops→contribution\n\n## Scope\nIn:\n- `src/features/cost-graph/**`\n- Mapper domain↔React Flow; do not persist RF positions as truth\n- KPI strip stub wired to calculation results\nOut:\n- Template apply, funnel feature\n\n## User Journey\n1. Nutzer öffnet Produkt\n2. Sieht Graph mit Revenue und abhängigen Layern\n3. Klickt Contribution → Inspector zeigt Provenance und Formel\n\n## Security & Data\n- No HTML injection from node labels\n- Secure-by-Default: F-02\n\n## Edge Cases\n- Large graph: collapse groups; mobile list fallback (U-01)\n- Unresolved nodes show warning semantics without claiming 0\n\n## Acceptance\n- [ ] Domain→RF mapper + elkjs layout; RF objects not written as model SoR\n- [ ] Drill-down path Result→Layer→Node→Driver→Inputs→Formula visible\n- [ ] Desktop workbench + mobile hierarchy list both work\n- [ ] Touched files: zero type escape hatches (typed-strict / Boy Scout)\n\n## Runner\nLabels: P0, agent-ready\nFeature slug: `workbench-graph-ui`\nDesign: .qa/design/v1-mvp-delivery.md"
+    },
+    {
+      "title": "09 Cost node editing drivers enable disable duplicate remove",
+      "featureSlug": "cost-node-editing",
+      "priority": "P0",
+      "labels": [
+        "P0",
+        "agent-ready"
+      ],
+      "dependsOn": [
+        "08 Cost graph mapper React Flow workbench and drill-down"
+      ],
+      "body": "## Type\nfeature\n\n## Intent\nOwner konfiguriert Kostenpositionen inkl. Driver, Rename, Disable, Duplicate, Remove ohne Template-Mutation (FR-004, FR-005, SCN-003, SCN-004).\n\n## Goal\nInspector edits update domain model and recalculate live; shipped template data untouched.\n\n## Non-Goals\n- No custom template save yet\n- No formula editor rich UI beyond validated text field\n- No allocations UI beyond selecting allocation strategy enum\n\n## Context\n- Existing: workbench + calculation + formulas\n- Driver behaviors: per unit, order, customer, employee, hour, km, stop, transaction, click, API call, % revenue, fixed period, custom formula\n\n## Scope\nIn:\n- `src/features/cost-graph/ui/inspector*`\n- domain mutations in cost-graph/products application\n- formula text field with validate-on-save\nOut:\n- templates feature\n\n## User Journey\n1. Nutzer öffnet Operations-Node\n2. Setzt Stundensatz und Stunden/Auftrag\n3. Sieht aktualisierte Per-Order- und Periodenkosten sofort\n\n## Security & Data\n- Formula field uses core validator only (FE-01)\n- Secure-by-Default: F-02, FE-01\n\n## Edge Cases\n- Remove optional node → excluded from calc; template file unchanged (BR-004)\n- Invalid formula → save blocked, German error\n\n## Acceptance\n- [ ] Add/rename/disable/duplicate/remove optional cost nodes on product instance\n- [ ] Driver-based cost recalculates on input change in same interaction (SCN-004/013)\n- [ ] Every numeric input shows unit/basis (U-03)\n- [ ] Touched files: zero type escape hatches (typed-strict / Boy Scout)\n\n## Runner\nLabels: P0, agent-ready\nFeature slug: `cost-node-editing`\nDesign: .qa/design/v1-mvp-delivery.md"
+    },
+    {
+      "title": "10 Glossary data and contextual help UI",
+      "featureSlug": "glossary-guidance",
+      "priority": "P0",
+      "labels": [
+        "P0",
+        "agent-ready"
+      ],
+      "dependsOn": [
+        "08 Cost graph mapper React Flow workbench and drill-down"
+      ],
+      "body": "## Type\nfeature\n\n## Intent\nKontextuelle Glossar-Hilfe erklärt Domänenbegriffe inkl. Formel und Beispiel (FR-017, FR-018, FR-022 partial, SCN-014).\n\n## Goal\nShipped glossary JSON + GlossaryHelp control (hover/focus/tap, keyboard); Glossary page lists terms.\n\n## Non-Goals\n- No CMS\n- No industry guidance beyond generic layer blurbs (Traffic Safety guidance in templates issue)\n\n## Context\n- Store: `src/data/glossary/`\n- Terms at least: CTR, CPC, CVR, CPA, CAC, COGS, LTV, contribution, allocation, margin\n- DESIGN: help not hover-only (U-02)\n\n## Scope\nIn:\n- `src/data/glossary/**`\n- `src/features/glossary/**`\n- Wire (?) affordances on KPI/node labels\nOut:\n- Template files\n\n## User Journey\n1. Nutzer fokussiert CAC-Info\n2. Sieht Definition, Formel und Zahlenbeispiel\n3. Öffnet Glossary-Seite für verwandte Begriffe\n\n## Security & Data\n- Glossary content is trusted shipped data; still render as text\n- Secure-by-Default: F-02\n\n## Edge Cases\n- Missing term id → silent omit, no crash\n- Keyboard users reach full definition (SCN-014)\n\n## Acceptance\n- [ ] Glossary records include id, term, fullName, shortDefinition, definition, formulaDescription?, example?, category, related\n- [ ] Contextual help works mouse + keyboard + tap\n- [ ] Glossary route lists shipped terms in German UI\n- [ ] Touched files: zero type escape hatches (typed-strict / Boy Scout)\n\n## Runner\nLabels: P0, agent-ready\nFeature slug: `glossary-guidance`\nDesign: .qa/design/v1-mvp-delivery.md"
+    },
+    {
+      "title": "11 Shipped industry templates including Traffic Safety",
+      "featureSlug": "shipped-templates",
+      "priority": "P0",
+      "labels": [
+        "P0",
+        "agent-ready"
+      ],
+      "dependsOn": [
+        "09 Cost node editing drivers enable disable duplicate remove",
+        "10 Glossary data and contextual help UI"
+      ],
+      "body": "## Type\nfeature\n\n## Intent\nVersionierte Branchen-Templates erzeugen den Produktgraphen inkl. Traffic Safety Operations-Vorschlägen (FR-019, FR-020, FR-022, SCN-015, SCN-017).\n\n## Goal\nCreating a product from SaaS|E-commerce|Service|Traffic Safety|Custom applies schema-driven template; layer guidance shows industry examples.\n\n## Non-Goals\n- No custom template save (next issue)\n- No marketplace\n- No core engine forks per industry (D-008)\n\n## Context\n- Path: `src/data/default-templates/`\n- Traffic Safety may suggest: drivers, vehicles, traffic equipment, permits, storage, setup/removal, subcontractors\n- Links: SCN-002, SCN-015\n\n## Scope\nIn:\n- `src/data/default-templates/**`\n- `src/features/templates/**` (load/apply)\n- Product create flow template picker\nOut:\n- Owner custom template persistence\n\n## User Journey\n1. Nutzer wählt Template „Traffic Safety“\n2. Sieht vorgeschlagene Operations-Positionen\n3. Bestätigt → Graph ist verdrahtet und berechenbar\n\n## Security & Data\n- Template JSON validated with Zod\n- Secure-by-Default: F-02\n\n## Edge Cases\n- Removing suggested node does not mutate shipped JSON (BR-004)\n- Unknown template version → explicit error\n\n## Acceptance\n- [ ] Five shipped templates apply and generate connected graph without manual wiring\n- [ ] Traffic Safety preselects ops suggestions; owner can deselect\n- [ ] Layer guidance shows general + industry-specific copy when available\n- [ ] Touched files: zero type escape hatches (typed-strict / Boy Scout)\n\n## Runner\nLabels: P0, agent-ready\nFeature slug: `shipped-templates`\nDesign: .qa/design/v1-mvp-delivery.md"
+    },
+    {
+      "title": "12 Save owner custom templates",
+      "featureSlug": "custom-templates",
+      "priority": "P1",
+      "labels": [
+        "P1",
+        "agent-ready"
+      ],
+      "dependsOn": [
+        "11 Shipped industry templates including Traffic Safety",
+        "06 Workspace business product ports and local adapter"
+      ],
+      "body": "## Type\nfeature\n\n## Intent\nOwner speichert angepasste Modelle als wiederverwendbare Custom Templates ohne Shipped-Templates zu ändern (FR-021, SCN-016).\n\n## Goal\nSave as template copies normalized domain config into owner-scoped custom template via local adapter.\n\n## Non-Goals\n- No sharing/marketplace\n- No auto-update of existing products when template changes\n\n## Context\n- Persist alongside businesses in local store; later Supabase table\n- Links: SCN-016, BR-004\n\n## Scope\nIn:\n- `src/features/templates/**` save/list/apply custom\n- local adapter methods\n- Templates UI page\nOut:\n- Supabase remote (later issue)\n\n## User Journey\n1. Nutzer passt Produkt an und wählt „Als Template speichern“\n2. Vergibt Namen\n3. Legt neues Produkt aus diesem Template an\n\n## Security & Data\n- Owner-scoped only in adapter API\n- Secure-by-Default: F-02\n\n## Edge Cases\n- Save fails → German save-failed; product edits retained\n- Name collision → ask rename, do not overwrite silently\n\n## Acceptance\n- [ ] Save as template creates owner custom template; shipped templates unchanged\n- [ ] New product can be created from that custom template\n- [ ] Templates page lists shipped vs custom separately\n- [ ] Touched files: zero type escape hatches (typed-strict / Boy Scout)\n\n## Runner\nLabels: P1, agent-ready\nFeature slug: `custom-templates`\nDesign: .qa/design/v1-mvp-delivery.md"
+    },
+    {
+      "title": "13 Marketing funnels stages costs and acquisition metrics",
+      "featureSlug": "marketing-funnels",
+      "priority": "P0",
+      "labels": [
+        "P0",
+        "agent-ready"
+      ],
+      "dependsOn": [
+        "08 Cost graph mapper React Flow workbench and drill-down",
+        "05 Core metrics registry and allocation provenance"
+      ],
+      "body": "## Type\nfeature\n\n## Intent\nMarketing-Funnels mit Stages, Media-Spend und Operating Costs liefern CPC/CPA/CAC inkl. Media-only vs Fully-loaded (FR-009–011, FR-014, SCN-008, SCN-009).\n\n## Goal\nOwner configures ordered stages + spend/ops costs; derived metrics appear when inputs exist; media-only vs fully loaded distinguished.\n\n## Non-Goals\n- No sales funnel (next)\n- No external ad-network sync\n\n## Context\n- Feature: `src/features/funnels/**`\n- Costs: media, agency, personnel, tools\n- Links: J-002\n\n## Scope\nIn:\n- funnels domain/application/ui for marketing type\n- metric wiring for clicks, conversions, CPC, CPA, CAC\nOut:\n- sales funnel, break-even panel\n\n## User Journey\n1. Nutzer legt Funnel „Google Generic“ an\n2. Trägt Spend, Klicks, CVR, Agenturkosten ein\n3. Sieht CPC/CPA und Fully-loaded CAC getrennt\n\n## Security & Data\n- Validate numeric bounds; F-02\n- Secure-by-Default: F-02\n\n## Edge Cases\n- Missing clicks → CPC unresolved not zero\n- Zero spend with clicks → explicit unresolved/warning\n\n## Acceptance\n- [ ] Marketing funnel CRUD with ordered stages + conversion rates\n- [ ] Media-only CPA/CAC distinguishable from fully loaded marketing CAC\n- [ ] Vitest fixture for Google-Ads-like funnel metrics\n- [ ] Touched files: zero type escape hatches (typed-strict / Boy Scout)\n\n## Runner\nLabels: P0, agent-ready\nFeature slug: `marketing-funnels`\nDesign: .qa/design/v1-mvp-delivery.md"
+    },
+    {
+      "title": "14 Sales funnels funnel filter and break-even panel",
+      "featureSlug": "funnel-compare-breakeven",
+      "priority": "P1",
+      "labels": [
+        "P1",
+        "agent-ready"
+      ],
+      "dependsOn": [
+        "13 Marketing funnels stages costs and acquisition metrics"
+      ],
+      "body": "## Type\nfeature\n\n## Intent\nSales-Funnels, Profitabilitätsfilter je Funnel und Break-even/Max-sustainable-cost (FR-012 Should, FR-013 Must, FR-015 Should, SCN-010–012).\n\n## Goal\nSales stages work; filtering product view by funnel attributes revenue/acquisition; break-even panel shows formula+inputs.\n\n## Non-Goals\n- No multi-touch attribution ML\n- No automated Actual ingestion\n\n## Context\n- Reuse marketing funnel stage engine\n- Workbench filter in context panel (DESIGN.md)\n\n## Scope\nIn:\n- funnels sales type\n- workbench funnel filter\n- reporting/break-even UI using core helper\nOut:\n- External CRM sync\n\n## User Journey\n1. Nutzer legt Sales-Funnel an\n2. Filtert Produkt auf „Google Generic“\n3. Öffnet Break-even und liest benötigte Menge\n\n## Security & Data\n- F-02 validation\n- Secure-by-Default: F-02\n\n## Edge Cases\n- Filter with no attribution rule → German explanation, not silent wrong totals\n- Break-even missing inputs → unresolved + missing field list\n\n## Acceptance\n- [ ] Sales funnel stages + sales acquisition cost calculated (SCN-010)\n- [ ] Funnel filter changes attributed profitability (SCN-011)\n- [ ] Break-even panel states formula and inputs (SCN-012)\n- [ ] Touched files: zero type escape hatches (typed-strict / Boy Scout)\n\n## Runner\nLabels: P1, agent-ready\nFeature slug: `funnel-compare-breakeven`\nDesign: .qa/design/v1-mvp-delivery.md"
+    },
+    {
+      "title": "15 Actual Budget Scenario contexts with sparse overrides",
+      "featureSlug": "scenarios-core",
+      "priority": "P0",
+      "labels": [
+        "P0",
+        "agent-ready"
+      ],
+      "dependsOn": [
+        "08 Cost graph mapper React Flow workbench and drill-down",
+        "06 Workspace business product ports and local adapter"
+      ],
+      "body": "## Type\nfeature\n\n## Intent\nActual/Budget/Scenario als Domain-Kontexte mit Sparse Overrides und Periodenwahl (FR-026–027, FR-029–030, SCN-020–021, SCN-023).\n\n## Goal\nContext switcher changes resolved values without mutating other contexts; scenario stores only overrides; Month default period.\n\n## Non-Goals\n- No side-by-side compare UI (next issue)\n- No forecast engine\n\n## Context\n- Architecture §11 scenario model\n- Period values retain native basis\n\n## Scope\nIn:\n- `src/features/scenarios/**`\n- period/context controls in workbench chrome\n- local persistence of contexts/overrides\nOut:\n- Compare grid UI\n\n## User Journey\n1. Nutzer pflegt Actual-Werte\n2. Erstellt Scenario „CVR +10%“ und ändert nur CVR\n3. Wechselt Kontext → nur Scenario zeigt Override\n\n## Security & Data\n- F-02; no secrets\n- Secure-by-Default: F-02\n\n## Edge Cases\n- Orphan override flagged and excluded (BR-005, C-05)\n- Scenario inheritance cycle rejected\n- Period switch uses normalization not naive /12\n\n## Acceptance\n- [ ] Actual/Budget/Scenario switch leaves other contexts intact (SCN-020)\n- [ ] Scenario stores sparse overrides only; remove override restores inherit (SCN-021)\n- [ ] Period Day…Year with Month default; Vitest for normalization\n- [ ] Touched files: zero type escape hatches (typed-strict / Boy Scout)\n\n## Runner\nLabels: P0, agent-ready\nFeature slug: `scenarios-core`\nDesign: .qa/design/v1-mvp-delivery.md"
+    },
+    {
+      "title": "16 Side-by-side scenario comparison UI",
+      "featureSlug": "scenario-compare-ui",
+      "priority": "P1",
+      "labels": [
+        "P1",
+        "agent-ready"
+      ],
+      "dependsOn": [
+        "15 Actual Budget Scenario contexts with sparse overrides"
+      ],
+      "body": "## Type\nfeature\n\n## Intent\nOwner vergleicht mehrere Kontexte nebeneinander (FR-028, SCN-022, J-003).\n\n## Goal\nCompare view shows ≥2 contexts KPI/node deltas with German labels; mobile stacks columns.\n\n## Non-Goals\n- No Monte-Carlo\n- No export PDF\n\n## Context\n- Scenarios page + workbench entry\n- DESIGN information density\n\n## Scope\nIn:\n- `src/features/scenarios/ui/compare*`\n- `src/features/reporting/**` if needed for delta table\nOut:\n- Auth\n\n## User Journey\n1. Nutzer wählt Actual und Scenario „CVR +10%“\n2. Öffnet Vergleich\n3. Sieht Delta bei CAC und Contribution\n\n## Security & Data\n- F-02\n- Secure-by-Default: F-02\n\n## Edge Cases\n- Comparing identical contexts shows zero deltas explicitly\n- Missing scenario id → German error\n\n## Acceptance\n- [ ] Compare ≥2 contexts side by side with deltas (SCN-022)\n- [ ] Desktop multi-column and mobile stacked layouts\n- [ ] Color not sole delta channel (sign + label)\n- [ ] Touched files: zero type escape hatches (typed-strict / Boy Scout)\n\n## Runner\nLabels: P1, agent-ready\nFeature slug: `scenario-compare-ui`\nDesign: .qa/design/v1-mvp-delivery.md"
+    },
+    {
+      "title": "17 Supabase Auth schema RLS and remote repository",
+      "featureSlug": "supabase-auth-rls",
+      "priority": "P0",
+      "labels": [
+        "P0",
+        "agent-ready"
+      ],
+      "dependsOn": [
+        "06 Workspace business product ports and local adapter"
+      ],
+      "body": "## Type\nfeature\n\n## Intent\nSupabase Auth + versionierte Migrations + RLS ersetzen Local-only für Owner-Daten (FR-031, A-001, D-005).\n\n## Goal\nAuthenticated owner can CRUD own rows only; anon denied; remote repository implements same ports; service role never in client.\n\n## Non-Goals\n- No multi-member workspaces\n- No custom auth\n- No migrating unrelated features' UI\n\n## Context\n- `supabase/migrations/`\n- Tables: workspaces, businesses, products, models, funnels, scenarios, custom_templates, period_values\n- Env: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY\n\n## Scope\nIn:\n- `supabase/migrations/**`\n- `src/integrations/supabase/**`\n- Auth UI (sign-in/up) German\n- Repository switch: remote when session present\nOut:\n- Full offline sync engine / CRDT\n\n## User Journey\n1. Nutzer registriert sich\n2. Legt Business an → erscheint in Supabase unter seiner owner_id\n3. Anderer User sieht diese Rows nicht\n\n## Security & Data\n- RLS owner policies deny-by-default (B-02, B-08, S-03)\n- No service role in client (F-05, S-04)\n- Managed Supabase Auth only (B-01)\n- Secure-by-Default: B-01, B-02, B-04, B-08, B-09, F-03, F-05\n\n## Edge Cases\n- Expired session on save → keep unsaved local edits + re-auth prompt (U-04)\n- Cross-user read returns empty/deny\n\n## Acceptance\n- [ ] Migrations + RLS policies; Vitest/integration or documented SQL policy tests prove cross-user deny\n- [ ] Sign-in/up/out German UI; session not stored as raw password/token in localStorage beyond Supabase SSR-safe patterns\n- [ ] Remote adapter implements businesses/products ports behind feature index\n- [ ] Touched files: zero type escape hatches (typed-strict / Boy Scout)\n\n## Runner\nLabels: P0, agent-ready\nFeature slug: `supabase-auth-rls`\nDesign: .qa/design/v1-mvp-delivery.md"
+    },
+    {
+      "title": "18 Persist full model templates scenarios and save states",
+      "featureSlug": "remote-persistence",
+      "priority": "P0",
+      "labels": [
+        "P0",
+        "agent-ready"
+      ],
+      "dependsOn": [
+        "17 Supabase Auth schema RLS and remote repository",
+        "12 Save owner custom templates",
+        "14 Sales funnels funnel filter and break-even panel",
+        "16 Side-by-side scenario comparison UI"
+      ],
+      "body": "## Type\nfeature\n\n## Intent\nVollständige Modelle inkl. Graph, Funnels, Szenarien und Custom Templates überleben Sessions mit klaren Save-States (FR-031, SCN-024).\n\n## Goal\nSave/load round-trip for product model graph, funnels, scenarios, custom templates; UI shows unsaved/saving/saved/save-failed.\n\n## Non-Goals\n- No realtime multiplayer\n- No automatic Actual import from banks\n\n## Context\n- Compose repositories across features\n- Schema versions on model/template\n\n## Scope\nIn:\n- persistence wiring in products/cost-graph/funnels/scenarios/templates\n- save chrome in workbench\n- `.env.example` complete\nOut:\n- Analytics of financial values\n\n## User Journey\n1. Nutzer bearbeitet Modell und speichert\n2. Meldet sich ab/an oder lädt neu\n3. Sieht identischen Graph und Szenario-Overrides\n\n## Security & Data\n- Never log financial values/formulas (P-02, FE-04)\n- RLS remains enforce point\n- Secure-by-Default: B-02, P-02, FE-04\n\n## Edge Cases\n- Partial save failure → save-failed, local draft retained\n- Version mismatch → migrate or explicit block with German message\n\n## Acceptance\n- [ ] Authenticated reload restores last saved model/funnels/scenarios/templates (SCN-024)\n- [ ] Save chrome states unsaved|saving|saved|save-failed correct (U-04)\n- [ ] Model/template schema_version field present and validated\n- [ ] Touched files: zero type escape hatches (typed-strict / Boy Scout)\n\n## Runner\nLabels: P0, agent-ready\nFeature slug: `remote-persistence`\nDesign: .qa/design/v1-mvp-delivery.md"
+    },
+    {
+      "title": "19 V1 polish a11y performance security and CI gate",
+      "featureSlug": "polish-quality-gate",
+      "priority": "P1",
+      "labels": [
+        "P1",
+        "agent-ready"
+      ],
+      "dependsOn": [
+        "18 Persist full model templates scenarios and save states"
+      ],
+      "body": "## Type\nchore\n\n## Intent\nV1 Qualitätsgate: a11y, Perf-Budgets, Security-Headers/CSP wo möglich, CI checks grün (VS-08 / NFRs).\n\n## Goal\nRelease checklist in PRD §18 passes for Must FRs; Playwright smoke for J-001; Lighthouse/a11y criticals addressed on primary routes.\n\n## Non-Goals\n- No new product features\n- No dark mode\n\n## Context\n- Hosting: Vercel\n- Checks already in npm run checks; add GitHub Action\n- DESIGN WCAG 2.2 AA\n\n## Scope\nIn:\n- `.github/workflows/ci.yml`\n- a11y fixes on primary routes\n- vercel.json headers if needed\n- Playwright smoke under tests/e2e\nOut:\n- New domain features\n\n## Security & Data\n- CSP/security headers (B-05)\n- Dependency audit in CI (P-01)\n- Secure-by-Default: B-05, P-01\n\n## Edge Cases\n- Smoke fails on blank screen (G-01)\n- Color-only status regressions fail a11y checks\n\n## Acceptance\n- [ ] CI workflow runs `npm run checks` on PR\n- [ ] Playwright smoke: create business+product+open workbench (J-001)\n- [ ] Primary routes meet keyboard focus + glossary non-hover-only; no critical console errors\n- [ ] Touched files: zero type escape hatches (typed-strict / Boy Scout)\n\n## Runner\nLabels: P1, agent-ready\nFeature slug: `polish-quality-gate`\nDesign: .qa/design/v1-mvp-delivery.md"
+    }
+  ]
+}

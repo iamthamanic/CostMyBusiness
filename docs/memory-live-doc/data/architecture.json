@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "id": "overview",
+  "title": {
+    "de": "Architektur",
+    "en": "Architecture"
+  },
+  "mermaid": "flowchart TD\n  App[app composition] --> Features[vertical feature slices]\n  Features --> Core[shared domain core]\n  Features --> Shared[shared UI / infra]\n  Features --> Persist[persistence adapters]\n  Core --> Money[money / periods]\n  Core --> Calc[calculation]\n  Core --> Formulas[formulas AST]\n",
+  "source_path": ".project-memory/architecture/overview.mermaid"
+}

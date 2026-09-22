@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "versions": [
+    {
+      "schema_version": 1,
+      "id": "overview-current",
+      "date": "2026-09-22",
+      "title": {
+        "de": "Aktuell",
+        "en": "Current"
+      },
+      "summary": {
+        "de": "Aktueller Stand aus overview.mermaid",
+        "en": "Current state from overview.mermaid"
+      },
+      "mermaid": "flowchart TD\n  App[app composition] --> Features[vertical feature slices]\n  Features --> Core[shared domain core]\n  Features --> Shared[shared UI / infra]\n  Features --> Persist[persistence adapters]\n  Core --> Money[money / periods]\n  Core --> Calc[calculation]\n  Core --> Formulas[formulas AST]\n",
+      "source_path": ".project-memory/architecture/overview.mermaid",
+      "is_current": true
+    }
+  ]
+}

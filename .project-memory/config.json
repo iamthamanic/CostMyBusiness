@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "languages": {
+    "json": [
+      "de",
+      "en"
+    ],
+    "markdown_primary": "de",
+    "markdown_en_dir": "docs/en"
+  },
+  "viewer_path": "docs/memory-live-doc",
+  "viewer_url_path": "/memory-live-doc/",
+  "storage_root": ".project-memory",
+  "pages": {
+    "publish": "opt-in",
+    "enabled": false,
+    "schema_version": 1,
+    "kind": "memory-live-doc-pages",
+    "status": "not_enabled",
+    "reason": "GitHub Pages is not configured. Default is local /memory-live-doc/ via serve-viewer.sh. Sites/Pages stay off until explicit pages-enable --confirm.",
+    "repo": "iamthamanic/CostMyBusiness",
+    "default_branch": "main",
+    "has_pages": false,
+    "build_type": null,
+    "source": {
+      "branch": null,
+      "path": null
+    },
+    "html_url": null,
+    "github_pages_status": null,
+    "viewer_url": "https://iamthamanic.github.io/CostMyBusiness/memory-live-doc/",
+    "viewer_url_path": "/memory-live-doc/",
+    "local_url": "http://127.0.0.1:8765/memory-live-doc/",
+    "local_viewer_present": true,
+    "can_enable": true,
+    "can_change_pages": true,
+    "action_taken": "none",
+    "private_note": null
+  },
+  "history_coverage": {
+    "status": "complete",
+    "reason": "young_docs_only_repo"
+  }
+}

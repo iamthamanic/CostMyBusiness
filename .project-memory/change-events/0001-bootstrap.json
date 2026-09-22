@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "id": "bootstrap-docs",
+  "at": "2026-09-22T10:22:13Z",
+  "title_de": "Dokumentations-Repo gebootstrappt",
+  "title_en": "Documentation repository bootstrapped",
+  "summary_de": "PRD, Architektur, Design und QA-Scaffolding ohne Feature-Code.",
+  "summary_en": "PRD, architecture, design and QA scaffolding without feature code.",
+  "commit": "0ead80b502bf04e66f626cf2ce528d6eee4f4da0",
+  "review_status": "needs-review"
+}

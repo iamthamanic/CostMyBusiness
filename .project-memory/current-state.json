@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "phase": "docs-and-qa-scaffolding",
+  "has_app_code": false,
+  "next": "Implement queue via @ecc-runner-loop starting at bootstrap-vite-app",
+  "review_status": "needs-review"
+}

@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "id": "project-derived",
+  "source": "docs/UI_STYLEGUIDE.md",
+  "locked": false,
+  "tokens": {
+    "bg": "#0f1115",
+    "bgElev": "#f4f6f8",
+    "ink": "#e8eaef",
+    "muted": "#657087",
+    "line": "#2a303c",
+    "accent": "#172033",
+    "accent2": "#6bb89a",
+    "danger": "#e07a6a",
+    "radius": "8px",
+    "fontDisplay": "IBM Plex Sans, Segoe UI, sans-serif",
+    "fontBody": "IBM Plex Sans, Segoe UI, sans-serif",
+    "fontMono": "IBM Plex Mono, ui-monospace, monospace",
+    "tabRadius": "8px",
+    "bgGlow1": "#172033",
+    "bgGlow2": "#0f1115"
+  },
+  "fonts": {
+    "google": "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+  },
+  "mermaid": {
+    "theme": "dark",
+    "themeVariables": {
+      "primaryColor": "#f4f6f8",
+      "primaryTextColor": "#e8eaef",
+      "primaryBorderColor": "#172033",
+      "lineColor": "#657087",
+      "secondaryColor": "#f4f6f8",
+      "tertiaryColor": "#0f1115",
+      "background": "#0f1115",
+      "mainBkg": "#f4f6f8",
+      "nodeBorder": "#172033",
+      "clusterBkg": "#0f1115",
+      "titleColor": "#e8eaef",
+      "edgeLabelBackground": "#f4f6f8"
+    }
+  }
+}
