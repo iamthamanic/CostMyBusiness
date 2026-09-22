@@ -12,6 +12,8 @@ import {
   type TemplatePickerValue,
   getShippedTemplate,
   defaultIncludedOptionalKeys,
+  isCustomTemplateId,
+  type CustomTemplate,
 } from '@/features/templates'
 import { Button, Field } from '@/shared/ui'
 
@@ -24,6 +26,7 @@ export function ProductsPage() {
   const [businesses, setBusinesses] = useState<Business[]>([])
   const [selectedBusinessId, setSelectedBusinessId] = useState(businessId ?? '')
   const [products, setProducts] = useState<Product[]>([])
+  const [customTemplates, setCustomTemplates] = useState<CustomTemplate[]>([])
   const [state, setState] = useState<LoadState>('loading')
   const [name, setName] = useState('')
   const [currency, setCurrency] = useState('EUR')
@@ -46,6 +49,7 @@ export function ProductsPage() {
         setSelectedBusinessId(list[0].id)
         setCurrency(list[0].defaultCurrency)
       }
+      setCustomTemplates(await repos.customTemplates.list(workspaceId))
     })()
   }, [])
 
@@ -90,7 +94,16 @@ export function ProductsPage() {
     }
     let templateVersion: number
     try {
-      templateVersion = getShippedTemplate(templatePick.templateId).version
+      if (isCustomTemplateId(templatePick.templateId)) {
+        const custom = customTemplates.find((t) => t.id === templatePick.templateId)
+        if (!custom) {
+          setFormError('Eigene Vorlage wurde nicht gefunden.')
+          return
+        }
+        templateVersion = custom.version
+      } else {
+        templateVersion = getShippedTemplate(templatePick.templateId).version
+      }
     } catch {
       setFormError('Unbekannte oder nicht unterstützte Vorlage.')
       return
@@ -189,7 +202,11 @@ export function ProductsPage() {
               />
             </div>
             <div className="mt-4">
-              <TemplatePicker value={templatePick} onChange={setTemplatePick} />
+              <TemplatePicker
+                value={templatePick}
+                onChange={setTemplatePick}
+                customTemplates={customTemplates}
+              />
             </div>
             {formError ? (
               <p className="mt-2 text-sm text-[color:var(--semantic-cost)]" role="alert">

@@ -122,10 +122,14 @@ export function applyShippedTemplate(
 export function applyTemplateById(
   templateId: string,
   product: Product,
-  options: ApplyTemplateOptions = {},
+  options: ApplyTemplateOptions & { customDefinition?: ShippedTemplate } = {},
 ): DomainModel {
-  const template = getShippedTemplate(templateId)
-  if (product.templateVersion !== undefined && product.templateVersion !== template.version) {
+  const template = options.customDefinition ?? getShippedTemplate(templateId)
+  if (
+    !options.customDefinition &&
+    product.templateVersion !== undefined &&
+    product.templateVersion !== template.version
+  ) {
     throw new UnsupportedTemplateVersionError(
       templateId,
       product.templateVersion,
@@ -136,6 +140,10 @@ export function applyTemplateById(
     ...options,
     includedOptionalKeys: options.includedOptionalKeys ?? product.includedOptionalKeys,
   })
+}
+
+export function isCustomTemplateId(templateId: string): boolean {
+  return templateId.startsWith('custom_')
 }
 
 export function getLayerGuidance(

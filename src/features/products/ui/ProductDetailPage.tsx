@@ -1,28 +1,36 @@
 /**
- * Product detail with editable cost-graph workbench.
+ * Product detail with editable cost-graph workbench and save-as-template.
  * Location: src/features/products/ui/ProductDetailPage.tsx
  */
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { useRepos } from '@/app/providers/ReposProvider'
+import { useRepos, useWorkspaceId } from '@/app/providers/ReposProvider'
 import type { DomainModel } from '@/core/model'
 import { buildProductModel, CostGraphWorkbench } from '@/features/cost-graph'
 import type { Product } from '@/features/products'
+import { MarketingFunnelsPanel } from '@/features/funnels'
+import { ContextPeriodChrome } from '@/features/scenarios'
 import {
+  DuplicateTemplateNameError,
+  isCustomTemplateId,
   resolveTemplateId,
   UnknownTemplateError,
   UnsupportedTemplateVersionError,
 } from '@/features/templates'
-import { MarketingFunnelsPanel } from '@/features/funnels'
-import { ContextPeriodChrome } from '@/features/scenarios'
+import { Button, Field } from '@/shared/ui'
 
 export function ProductDetailPage() {
   const { productId } = useParams()
   const repos = useRepos()
+  const workspaceId = useWorkspaceId()
   const [product, setProduct] = useState<Product | null>(null)
   const [model, setModel] = useState<DomainModel | null>(null)
   const [state, setState] = useState<'loading' | 'ready' | 'missing' | 'template-error'>('loading')
   const [templateError, setTemplateError] = useState<string | null>(null)
+  const [saveName, setSaveName] = useState('')
+  const [saveMsg, setSaveMsg] = useState<string | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     void (async () => {
@@ -38,9 +46,22 @@ export function ProductDetailPage() {
         return
       }
       try {
-        setModel(buildProductModel(found))
+        const templateId = resolveTemplateId(found)
+        let customDefinition = undefined
+        if (isCustomTemplateId(templateId)) {
+          const custom = await repos.customTemplates.get(templateId)
+          if (!custom) {
+            throw new UnknownTemplateError(
+              templateId,
+              `Eigene Vorlage „${templateId}“ wurde nicht gefunden.`,
+            )
+          }
+          customDefinition = custom.definition
+        }
+        setModel(buildProductModel(found, undefined, customDefinition))
         setTemplateError(null)
         setState('ready')
+        setSaveName(`${found.name} Vorlage`)
       } catch (err) {
         const messageDe =
           err instanceof UnknownTemplateError || err instanceof UnsupportedTemplateVersionError
@@ -52,6 +73,29 @@ export function ProductDetailPage() {
       }
     })()
   }, [productId])
+
+  async function onSaveAsTemplate() {
+    if (!model || !product) return
+    setSaveError(null)
+    setSaveMsg(null)
+    setSaving(true)
+    try {
+      const saved = await repos.customTemplates.saveFromModel({
+        workspaceId,
+        name: saveName,
+        model,
+      })
+      setSaveMsg(`Vorlage „${saved.name}“ gespeichert.`)
+    } catch (err) {
+      if (err instanceof DuplicateTemplateNameError) {
+        setSaveError(err.messageDe)
+      } else {
+        setSaveError('Vorlage konnte nicht gespeichert werden. Produktänderungen bleiben erhalten.')
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
 
   if (state === 'loading') return <p aria-busy="true">Lädt…</p>
   if (state === 'template-error' && product) {
@@ -90,11 +134,42 @@ export function ProductDetailPage() {
           Zurück zur Produktliste
         </Link>
       </div>
+
+      <div className="flex flex-wrap items-end gap-2 rounded-[12px] border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] p-3">
+        <Field
+          label="Als Vorlage speichern"
+          name="templateSaveName"
+          value={saveName}
+          onChange={(e) => setSaveName(e.target.value)}
+          hint="Kopiert das aktuelle Modell — ausgelieferte Vorlagen bleiben unverändert"
+        />
+        <Button onClick={() => void onSaveAsTemplate()} disabled={saving}>
+          {saving ? 'Speichert…' : 'Als Vorlage speichern'}
+        </Button>
+        {saveMsg ? (
+          <p className="w-full text-sm text-[color:var(--ink-muted)]" role="status">
+            {saveMsg}{' '}
+            <Link to="/templates" className="text-[color:var(--accent-analysis)]">
+              Zu Vorlagen
+            </Link>
+          </p>
+        ) : null}
+        {saveError ? (
+          <p className="w-full text-sm text-[color:var(--semantic-cost)]" role="alert">
+            {saveError}
+          </p>
+        ) : null}
+      </div>
+
       <ContextPeriodChrome productId={product.id} />
       <CostGraphWorkbench
         model={model}
         onModelChange={setModel}
-        templateId={resolveTemplateId(product)}
+        templateId={
+          isCustomTemplateId(resolveTemplateId(product))
+            ? 'custom'
+            : resolveTemplateId(product)
+        }
       />
       <MarketingFunnelsPanel productId={product.id} />
     </section>
