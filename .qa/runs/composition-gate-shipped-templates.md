@@ -1,15 +1,4 @@
-# Composition gate — shipped-templates
-
+# Composition Gate — shipped-templates
 **Verdict:** SKIPPED
-**HEAD (at proof write):** WORKTREE — refresh after commit
-
-## Scope
-Template JSON → applyShippedTemplate → DomainModel; product create stores templateId.
-
-## Skip reason
-Single-hop / no producer→consumer side-effect path:
-- No outbox, queue, webhook, mail, or bulk fan-out
-- No write-in-A / async read-in-B pipeline
-- Calculation remains pure in `src/core/**`
-
-Simulations N-actors / invalid fallback / concurrent consumers: N/A for static shipped data + local product row.
+**HEAD:** 761b666558c8bf1bf9af218f3e5c006cac9e271a
+**Reason:** Static shipped template data + apply to DomainModel + local product fields; no producer→consumer write path / side-effect hops.
