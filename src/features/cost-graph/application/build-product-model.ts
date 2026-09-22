@@ -17,7 +17,6 @@ export function buildProductModel(
 ): DomainModel {
   return applyTemplateById(resolveTemplateId(product), product, {
     volume,
-    price: product.price,
     includedOptionalKeys: product.includedOptionalKeys,
     customDefinition,
   })

@@ -3,7 +3,9 @@
  * Location: src/features/templates/application/apply-template.ts
  */
 import type { DomainEdge, DomainModel, DomainNode } from '@/core/model'
+import { resolveNetRevenue } from '@/core/pricing'
 import type { Product } from '@/features/products/domain/product'
+import { normalizePricingInput } from '@/features/products/domain/product'
 import {
   UnknownTemplateError,
   UnsupportedTemplateVersionError,
@@ -16,7 +18,10 @@ export type ApplyTemplateOptions = {
   /** Optional cost node keys to include; defaults to all suggested optionals. */
   includedOptionalKeys?: string[]
   volume?: number
-  /** Override revenue price from product when set. */
+  /**
+   * @deprecated Prefer product pricing SoR. When set, treated as selling price override
+   * before net resolution (legacy callers).
+   */
   price?: number
 }
 
@@ -64,8 +69,14 @@ export function applyShippedTemplate(
     }
   }
 
-  const price = options.price ?? product.price ?? template.nodes.find((n) => n.key === 'revenue')?.inputs.price ?? 0
-
+  const pricing = normalizePricingInput({
+    sellingPrice: options.price ?? product.sellingPrice ?? product.price,
+    priceKind: product.priceKind,
+    taxRatePercent: product.taxRatePercent,
+    pricingBasis: product.pricingBasis,
+    currency: product.currency,
+  })
+  const netResolved = resolveNetRevenue(pricing)
   const nodes: DomainNode[] = []
   for (const tNode of template.nodes) {
     if (!selectedKeys.has(tNode.key)) continue
@@ -80,7 +91,15 @@ export function applyShippedTemplate(
 
     const inputs = { ...tNode.inputs }
     if (tNode.key === 'revenue') {
-      inputs.price = price
+      // Economic net revenue only — VAT is not a cost node.
+      if (netResolved.status === 'ok') {
+        inputs.price = netResolved.netRevenue
+        inputs.grossRevenue = netResolved.grossRevenue
+        inputs.taxRatePercent = netResolved.taxRatePercent
+        inputs.netRevenue = netResolved.netRevenue
+      } else {
+        delete inputs.price
+      }
     }
 
     nodes.push({

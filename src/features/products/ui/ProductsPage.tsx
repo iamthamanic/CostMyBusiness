@@ -30,7 +30,12 @@ export function ProductsPage() {
   const [state, setState] = useState<LoadState>('loading')
   const [name, setName] = useState('')
   const [currency, setCurrency] = useState('EUR')
-  const [price, setPrice] = useState('0')
+  const [price, setPrice] = useState('89')
+  const [priceKind, setPriceKind] = useState<'gross' | 'net'>('gross')
+  const [taxRatePercent, setTaxRatePercent] = useState('19')
+  const [pricingBasis, setPricingBasis] = useState<
+    'per_order' | 'per_unit' | 'per_customer' | 'per_month'
+  >('per_order')
   const [templatePick, setTemplatePick] = useState<TemplatePickerValue>(() => {
     const custom = getShippedTemplate('custom')
     return {
@@ -89,7 +94,12 @@ export function ProductsPage() {
     }
     const priceNumber = Number(price)
     if (!Number.isFinite(priceNumber) || priceNumber < 0) {
-      setFormError('Preis muss eine nicht-negative Zahl sein.')
+      setFormError('Verkaufspreis muss eine nicht-negative Zahl sein.')
+      return
+    }
+    const taxNumber = Number(taxRatePercent)
+    if (!Number.isFinite(taxNumber) || taxNumber < 0 || taxNumber >= 100) {
+      setFormError('USt-Satz muss zwischen 0 und unter 100 liegen.')
       return
     }
     let templateVersion: number
@@ -114,12 +124,17 @@ export function ProductsPage() {
         businessId: selectedBusinessId,
         name: name.trim(),
         currency,
-        price: priceNumber,
+        sellingPrice: priceNumber,
+        priceKind,
+        taxRatePercent: taxNumber,
+        pricingBasis,
         templateId: templatePick.templateId,
         templateVersion,
         includedOptionalKeys: templatePick.includedOptionalKeys,
       })
       setName('')
+      setPrice('89')
+      setTaxRatePercent('19')
       await reloadProducts()
     } catch {
       setFormError('Produkt konnte nicht gespeichert werden.')
@@ -191,15 +206,54 @@ export function ProductsPage() {
                 hint="ISO 4217"
               />
               <Field
-                label="Preis"
+                label="Verkaufspreis"
                 name="price"
                 type="number"
                 min={0}
                 step="0.01"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
-                hint={`Einheit: ${currency} / Stück`}
+                hint={`Einheit: ${currency}`}
               />
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="font-medium">Preisart</span>
+                <select
+                  className="rounded-md border border-[color:var(--line-default)] bg-white px-3 py-2"
+                  value={priceKind}
+                  onChange={(e) => setPriceKind(e.target.value as 'gross' | 'net')}
+                >
+                  <option value="gross">Brutto</option>
+                  <option value="net">Netto</option>
+                </select>
+              </label>
+              <Field
+                label="USt %"
+                name="taxRatePercent"
+                type="number"
+                min={0}
+                max={99.99}
+                step="0.01"
+                value={taxRatePercent}
+                onChange={(e) => setTaxRatePercent(e.target.value)}
+                hint="Keine Kostenposition — nur Preisnormalisierung"
+              />
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="font-medium">Preisbasis</span>
+                <select
+                  className="rounded-md border border-[color:var(--line-default)] bg-white px-3 py-2"
+                  value={pricingBasis}
+                  onChange={(e) =>
+                    setPricingBasis(
+                      e.target.value as 'per_order' | 'per_unit' | 'per_customer' | 'per_month',
+                    )
+                  }
+                >
+                  <option value="per_order">pro Auftrag</option>
+                  <option value="per_unit">pro Einheit</option>
+                  <option value="per_customer">pro Kunde</option>
+                  <option value="per_month">pro Monat</option>
+                </select>
+              </label>
             </div>
             <div className="mt-4">
               <TemplatePicker
@@ -244,7 +298,17 @@ export function ProductsPage() {
                   <div>
                     <p className="font-medium">{product.name}</p>
                     <p className="text-xs text-[color:var(--ink-muted)]">
-                      {product.price ?? 0} {product.currency} / Stück
+                      {product.sellingPrice} {product.currency}{' '}
+                      {product.priceKind === 'gross' ? 'brutto' : 'netto'}
+                      {product.taxRatePercent > 0 ? ` · USt ${product.taxRatePercent}%` : ''}
+                      {' · '}
+                      {product.pricingBasis === 'per_order'
+                        ? 'pro Auftrag'
+                        : product.pricingBasis === 'per_customer'
+                          ? 'pro Kunde'
+                          : product.pricingBasis === 'per_month'
+                            ? 'pro Monat'
+                            : 'pro Einheit'}
                       {product.templateId ? ` · Vorlage ${product.templateId}` : ''}
                     </p>
                   </div>
