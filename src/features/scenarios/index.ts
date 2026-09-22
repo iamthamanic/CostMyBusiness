@@ -20,3 +20,4 @@ export {
   type Scenario,
 } from './domain/planning'
 export { ContextPeriodChrome } from './ui/ContextPeriodChrome'
+export { CompactContextBar } from './ui/CompactContextBar'

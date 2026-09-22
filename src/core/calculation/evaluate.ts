@@ -11,6 +11,7 @@ import {
   type NodeId,
   type NodeResult,
 } from '@/core/model'
+import { runFormula } from '@/core/formulas'
 
 function buildAdjacency(model: DomainModel): Map<NodeId, NodeId[]> {
   const deps = new Map<NodeId, NodeId[]>()
@@ -76,7 +77,27 @@ function unresolved(
   return { status: 'unresolved', reason, message }
 }
 
-function computeLeaf(node: DomainNode, volume: number): CalcValue {
+function liveRevenuePerUnit(
+  model: DomainModel,
+  results: Map<NodeId, NodeResult>,
+): number | undefined {
+  for (const node of model.nodes) {
+    if (node.kind !== 'revenue') continue
+    const r = results.get(node.id)
+    if (r?.value.status === 'ok') return r.value.perUnit
+    if (typeof node.inputs.price === 'number' && Number.isFinite(node.inputs.price)) {
+      return node.inputs.price
+    }
+  }
+  return undefined
+}
+
+function computeLeaf(
+  node: DomainNode,
+  volume: number,
+  model: DomainModel,
+  results: Map<NodeId, NodeResult>,
+): CalcValue {
   if (!node.enabled) {
     return unresolved('disabled', `Node ${node.key} is disabled`)
   }
@@ -99,6 +120,30 @@ function computeLeaf(node: DomainNode, volume: number): CalcValue {
   }
 
   if (node.kind === 'cost') {
+    // Custom formula overrides behavior when present (restricted AST only).
+    if (node.formulaRef && node.formulaRef.trim() !== '') {
+      const revenue = liveRevenuePerUnit(model, results)
+      const scope: Record<string, number> = { ...node.inputs }
+      if (revenue !== undefined) {
+        scope.revenue = revenue
+        scope.revenuePerUnit = revenue
+      }
+      try {
+        const evaluated = runFormula(node.formulaRef, scope)
+        if (evaluated.status !== 'ok') {
+          return unresolved(
+            evaluated.reason === 'divide_by_zero' ? 'divide_by_zero' : 'missing_input',
+            evaluated.message,
+          )
+        }
+        const perUnit = evaluated.value
+        return { status: 'ok', perUnit, periodTotal: perUnit * volume }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Formel ungültig'
+        return unresolved('unknown', message)
+      }
+    }
+
     const behavior = node.costBehavior ?? 'fixed_period'
     if (behavior === 'fixed_period') {
       const amount = node.inputs.amount
@@ -126,15 +171,11 @@ function computeLeaf(node: DomainNode, volume: number): CalcValue {
       const perUnit = rate * hoursPerOrder
       return { status: 'ok', perUnit, periodTotal: perUnit * volume }
     }
-    if (
-      behavior === 'per_km' ||
-      behavior === 'per_stop'
-    ) {
+    if (behavior === 'per_km' || behavior === 'per_stop') {
       const rate = node.inputs.rate
       if (rate === undefined) return unresolved('missing_input', 'Unit cost requires rate')
       const quantity = node.inputs.quantity
       if (quantity === undefined) {
-        // rate alone = per-unit driver already applied externally
         return { status: 'ok', perUnit: rate, periodTotal: rate * volume }
       }
       const perUnit = rate * quantity
@@ -155,16 +196,21 @@ function computeLeaf(node: DomainNode, volume: number): CalcValue {
     }
     if (behavior === 'percentage_revenue') {
       const percentage = node.inputs.percentage
-      const revenuePerUnit = node.inputs.revenuePerUnit
-      if (percentage === undefined || revenuePerUnit === undefined) {
-        return unresolved('missing_input', 'Percentage cost requires percentage and revenuePerUnit')
+      if (percentage === undefined) {
+        return unresolved('missing_input', 'Percentage cost requires percentage')
+      }
+      const revenuePerUnit =
+        liveRevenuePerUnit(model, results) ?? node.inputs.revenuePerUnit
+      if (revenuePerUnit === undefined) {
+        return unresolved(
+          'missing_input',
+          'Percentage cost requires live revenue or revenuePerUnit',
+        )
       }
       const perUnit = (revenuePerUnit * percentage) / 100
       return { status: 'ok', perUnit, periodTotal: perUnit * volume }
     }
     if (behavior === 'custom_formula') {
-      // Formula evaluation is applied by the workbench via formulaRef when set;
-      // without a validated formula, treat rate as fallback per-order cost.
       const rate = node.inputs.rate
       if (rate === undefined) {
         return unresolved('missing_input', 'Custom formula cost requires rate fallback or formula')
@@ -177,10 +223,7 @@ function computeLeaf(node: DomainNode, volume: number): CalcValue {
   return unresolved('unknown', `Unsupported leaf kind: ${node.kind}`)
 }
 
-function sumGroup(
-  upstreamIds: NodeId[],
-  results: Map<NodeId, NodeResult>,
-): CalcValue {
+function sumGroup(upstreamIds: NodeId[], results: Map<NodeId, NodeResult>): CalcValue {
   let periodTotal = 0
   let perUnit = 0
   let sawOk = false
@@ -198,6 +241,7 @@ function sumGroup(
   return { status: 'ok', perUnit, periodTotal }
 }
 
+/** Contribution = net revenue − direct costs among upstreams. */
 function computeContribution(
   upstreamIds: NodeId[],
   nodeById: Map<NodeId, DomainNode>,
@@ -234,6 +278,51 @@ function computeContribution(
 }
 
 /**
+ * Fully loaded profit = contribution − allocated overhead (and other non-base upstream costs).
+ * Upstream result nodes (e.g. contribution) are the positive base — never treated as costs.
+ */
+function computeFullyLoadedProfit(
+  upstreamIds: NodeId[],
+  nodeById: Map<NodeId, DomainNode>,
+  results: Map<NodeId, NodeResult>,
+): CalcValue {
+  let basePeriod = 0
+  let basePu = 0
+  let costPeriod = 0
+  let costPu = 0
+  let hasBase = false
+
+  for (const id of upstreamIds) {
+    const srcNode = nodeById.get(id)
+    const srcResult = results.get(id)
+    if (!srcNode || !srcResult) {
+      return unresolved('missing_input', `Missing upstream ${id}`)
+    }
+    if (srcResult.value.status !== 'ok') {
+      return unresolved(srcResult.value.reason, srcResult.value.message)
+    }
+    if (srcNode.kind === 'result' || srcNode.kind === 'revenue') {
+      hasBase = true
+      basePeriod += srcResult.value.periodTotal
+      basePu += srcResult.value.perUnit
+    } else {
+      costPeriod += srcResult.value.periodTotal
+      costPu += srcResult.value.perUnit
+    }
+  }
+
+  if (!hasBase) {
+    return unresolved('missing_input', 'Profit requires contribution (or revenue) upstream')
+  }
+
+  return {
+    status: 'ok',
+    perUnit: basePu - costPu,
+    periodTotal: basePeriod - costPeriod,
+  }
+}
+
+/**
  * Evaluate a domain model deterministically.
  * Never returns Infinity/NaN — uses unresolved results instead.
  */
@@ -252,12 +341,35 @@ export function evaluate(model: DomainModel): EvaluationResult {
 
     if (!node.enabled) {
       value = unresolved('disabled', `Node ${node.key} is disabled`)
-    } else if (node.kind === 'result' && (node.key === 'contribution' || node.key === 'profit')) {
+    } else if (node.kind === 'result' && node.key === 'contribution') {
       value = computeContribution(upstreamIds, nodeById, results)
+    } else if (node.kind === 'result' && (node.key === 'profit' || node.key === 'fully_loaded_profit')) {
+      value = computeFullyLoadedProfit(upstreamIds, nodeById, results)
+    } else if (node.kind === 'result' && node.key === 'margin') {
+      const profitId = upstreamIds.find((id) => nodeById.get(id)?.key === 'profit')
+      const revenueNode = model.nodes.find((n) => n.kind === 'revenue')
+      const profit = profitId ? results.get(profitId) : undefined
+      const revenue = revenueNode ? results.get(revenueNode.id) : undefined
+      if (
+        profit?.value.status === 'ok' &&
+        revenue?.value.status === 'ok' &&
+        revenue.value.perUnit !== 0
+      ) {
+        const ratio = profit.value.perUnit / revenue.value.perUnit
+        value = {
+          status: 'ok',
+          perUnit: ratio * 100,
+          periodTotal: ratio * 100,
+        }
+      } else if (profit?.value.status === 'unresolved') {
+        value = profit.value
+      } else {
+        value = unresolved('missing_input', 'Marge benötigt Gewinn und Nettoerlös')
+      }
     } else if (node.kind === 'group' || node.kind === 'metric' || node.kind === 'result') {
       value = sumGroup(upstreamIds, results)
     } else {
-      value = computeLeaf(node, model.volume)
+      value = computeLeaf(node, model.volume, model, results)
     }
 
     if (value.status === 'ok') {

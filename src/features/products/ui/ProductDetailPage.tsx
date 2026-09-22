@@ -1,21 +1,18 @@
 /**
- * Product detail with editable cost-graph workbench and save-as-template.
+ * Product detail — single visual product calculator workbench.
  * Location: src/features/products/ui/ProductDetailPage.tsx
  */
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useRepos, useWorkspaceId } from '@/app/providers/ReposProvider'
-import { resolveNetRevenue } from '@/core/pricing'
 import type { DomainModel } from '@/core/model'
-import { buildProductModel, CostGraphWorkbench } from '@/features/cost-graph'
-import type { Product } from '@/features/products'
 import {
-  BreakEvenPanel,
-  FunnelFilterPanel,
-  MarketingFunnelsPanel,
-  SalesFunnelsPanel,
-} from '@/features/funnels'
-import { ContextPeriodChrome } from '@/features/scenarios'
+  applyProductPricingToModel,
+  buildProductModel,
+  ProductCalculatorWorkbench,
+} from '@/features/cost-graph'
+import type { Product } from '@/features/products'
+import { CompactContextBar } from '@/features/scenarios'
 import {
   DuplicateTemplateNameError,
   isCustomTemplateId,
@@ -33,10 +30,17 @@ export function ProductDetailPage() {
   const [model, setModel] = useState<DomainModel | null>(null)
   const [state, setState] = useState<'loading' | 'ready' | 'missing' | 'template-error'>('loading')
   const [templateError, setTemplateError] = useState<string | null>(null)
+  const [resolvedValues, setResolvedValues] = useState<Record<string, number>>({})
+  const [optionsOpen, setOptionsOpen] = useState(false)
+  const [showExpertGraph, setShowExpertGraph] = useState(false)
   const [saveName, setSaveName] = useState('')
   const [saveMsg, setSaveMsg] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+
+  const onResolvedValues = useCallback((values: Record<string, number>) => {
+    setResolvedValues(values)
+  }, [])
 
   useEffect(() => {
     void (async () => {
@@ -78,7 +82,26 @@ export function ProductDetailPage() {
         setState('template-error')
       }
     })()
-  }, [productId])
+  }, [productId, repos.products, repos.customTemplates])
+
+  async function persistProduct(next: Product) {
+    setProduct(next)
+    if (model) {
+      setModel(applyProductPricingToModel(model, next))
+    }
+    try {
+      await repos.products.update(next.id, {
+        sellingPrice: next.sellingPrice,
+        priceKind: next.priceKind,
+        taxRatePercent: next.taxRatePercent,
+        pricingBasis: next.pricingBasis,
+        currency: next.currency,
+        name: next.name,
+      })
+    } catch {
+      // Local UI stays authoritative; persist best-effort.
+    }
+  }
 
   async function onSaveAsTemplate() {
     if (!model || !product) return
@@ -111,7 +134,7 @@ export function ProductDetailPage() {
           {templateError}
         </p>
         <Link to="/products" className="text-[color:var(--accent-analysis)]">
-          Zurück zu Produkten
+          ← Produkte
         </Link>
       </section>
     )
@@ -121,93 +144,89 @@ export function ProductDetailPage() {
       <section>
         <p role="alert">Produkt nicht gefunden.</p>
         <Link to="/products" className="text-[color:var(--accent-analysis)]">
-          Zurück zu Produkten
+          ← Produkte
         </Link>
       </section>
     )
   }
 
   return (
-    <section className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+    <section className="flex flex-col gap-5" data-testid="product-detail-workbench">
+      <header className="flex flex-col gap-3 border-b border-[color:var(--line-default)] pb-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
+          <Link to="/products" className="text-sm text-[color:var(--accent-analysis)]">
+            ← Produkte
+          </Link>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight">{product.name}</h1>
           <p className="text-sm text-[color:var(--ink-muted)]">
-            Produkt-Workbench · Vorlage {resolveTemplateId(product)}
+            {resolveTemplateId(product).includes('halteverbotszone')
+              ? 'Traffic Safety · Halteverbotszone'
+              : `Vorlage ${resolveTemplateId(product)}`}{' '}
+            ·{' '}
+            {product.pricingBasis === 'per_order'
+              ? 'pro Auftrag'
+              : product.pricingBasis === 'per_customer'
+                ? 'pro Kunde'
+                : product.pricingBasis === 'per_month'
+                  ? 'pro Monat'
+                  : 'pro Einheit'}
           </p>
-          <h1 className="text-2xl font-semibold">{product.name}</h1>
-          {(() => {
-            const pricing = resolveNetRevenue({
-              sellingPrice: product.sellingPrice,
-              priceKind: product.priceKind,
-              taxRatePercent: product.taxRatePercent,
-              pricingBasis: product.pricingBasis,
-              currency: product.currency,
-            })
-            if (pricing.status !== 'ok') {
-              return (
-                <p role="status" className="mt-1 text-sm text-[color:var(--semantic-warning)]">
-                  {pricing.messageDe}
-                </p>
-              )
-            }
-            return (
-              <p className="mt-1 text-sm text-[color:var(--ink-muted)]">
-                {pricing.grossRevenue.toFixed(2)} {product.currency}{' '}
-                {product.priceKind === 'gross' ? 'brutto' : 'brutto-äquiv.'} · USt{' '}
-                {product.taxRatePercent}% (keine Kostenposition) → Nettoerlös{' '}
-                <span className="font-medium tabular-nums text-[color:var(--ink-primary)]">
-                  {pricing.netRevenue.toFixed(2)} {product.currency}
-                </span>
-              </p>
-            )
-          })()}
         </div>
-        <Link to="/products" className="text-sm text-[color:var(--accent-analysis)]">
-          Zurück zur Produktliste
-        </Link>
-      </div>
+        <div className="flex flex-wrap items-end gap-3">
+          <CompactContextBar productId={product.id} onResolvedValues={onResolvedValues} />
+          <div className="relative">
+            <Button variant="ghost" onClick={() => setOptionsOpen((o) => !o)}>
+              Optionen
+            </Button>
+            {optionsOpen ? (
+              <div className="absolute right-0 z-20 mt-1 w-72 rounded-[12px] border border-[color:var(--line-default)] bg-white p-3 shadow-lg">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={showExpertGraph}
+                    onChange={(e) => setShowExpertGraph(e.target.checked)}
+                  />
+                  Experten-Graph anzeigen
+                </label>
+                <div className="mt-3 border-t border-[color:var(--line-default)] pt-3">
+                  <Field
+                    label="Als Vorlage speichern"
+                    name="templateSaveName"
+                    value={saveName}
+                    onChange={(e) => setSaveName(e.target.value)}
+                  />
+                  <Button
+                    className="mt-2"
+                    onClick={() => void onSaveAsTemplate()}
+                    disabled={saving}
+                  >
+                    {saving ? 'Speichert…' : 'Speichern'}
+                  </Button>
+                  {saveMsg ? (
+                    <p className="mt-2 text-xs text-[color:var(--ink-muted)]" role="status">
+                      {saveMsg}
+                    </p>
+                  ) : null}
+                  {saveError ? (
+                    <p className="mt-2 text-xs text-[color:var(--semantic-cost)]" role="alert">
+                      {saveError}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </header>
 
-      <div className="flex flex-wrap items-end gap-2 rounded-[12px] border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] p-3">
-        <Field
-          label="Als Vorlage speichern"
-          name="templateSaveName"
-          value={saveName}
-          onChange={(e) => setSaveName(e.target.value)}
-          hint="Kopiert das aktuelle Modell — ausgelieferte Vorlagen bleiben unverändert"
-        />
-        <Button onClick={() => void onSaveAsTemplate()} disabled={saving}>
-          {saving ? 'Speichert…' : 'Als Vorlage speichern'}
-        </Button>
-        {saveMsg ? (
-          <p className="w-full text-sm text-[color:var(--ink-muted)]" role="status">
-            {saveMsg}{' '}
-            <Link to="/templates" className="text-[color:var(--accent-analysis)]">
-              Zu Vorlagen
-            </Link>
-          </p>
-        ) : null}
-        {saveError ? (
-          <p className="w-full text-sm text-[color:var(--semantic-cost)]" role="alert">
-            {saveError}
-          </p>
-        ) : null}
-      </div>
-
-      <ContextPeriodChrome productId={product.id} />
-      <CostGraphWorkbench
+      <ProductCalculatorWorkbench
+        product={product}
         model={model}
         onModelChange={setModel}
-        productId={product.id}
-        templateId={
-          isCustomTemplateId(resolveTemplateId(product))
-            ? 'custom'
-            : resolveTemplateId(product)
-        }
+        onProductChange={(next) => void persistProduct(next)}
+        resolvedValues={resolvedValues}
+        showExpertGraph={showExpertGraph}
       />
-      <FunnelFilterPanel productId={product.id} model={model} />
-      <BreakEvenPanel />
-      <MarketingFunnelsPanel productId={product.id} />
-      <SalesFunnelsPanel productId={product.id} />
     </section>
   )
 }
