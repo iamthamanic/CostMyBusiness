@@ -18,8 +18,13 @@ import {
   defaultMarketingStages,
   type CreateMarketingFunnelInput,
   type MarketingFunnel,
-  type UpdateMarketingFunnelInput,
 } from '../../funnels/domain/marketing-funnel'
+import {
+  defaultSalesStages,
+  type CreateSalesFunnelInput,
+  type SalesFunnel,
+} from '../../funnels/domain/sales-funnel'
+import type { ProductFunnel } from '../../funnels/application/funnel-filter'
 import type { PlanningRepository } from '../../scenarios/application/planning-repository'
 import {
   removeOverride,
@@ -241,22 +246,62 @@ export function createLocalRepositories(storage?: StorageLike): LocalRepositorie
       save(snapshot)
       return funnel
     },
-    async update(id, input: UpdateMarketingFunnelInput) {
+    async createSales(input: CreateSalesFunnelInput) {
+      const snapshot = load()
+      const product = snapshot.products.find((p) => p.id === input.productId)
+      if (!product) throw new NotFoundError('Product', input.productId)
+      const ts = nowIso()
+      const funnel: SalesFunnel = {
+        id: newId('fnl'),
+        productId: input.productId,
+        type: 'sales',
+        name: input.name,
+        stages: input.stages ?? defaultSalesStages(),
+        costs: {
+          personnel: input.costs?.personnel ?? 0,
+          crm: input.costs?.crm ?? 0,
+          commission: input.costs?.commission ?? 0,
+          tools: input.costs?.tools ?? 0,
+        },
+        createdAt: ts,
+        updatedAt: ts,
+      }
+      snapshot.funnels.push(funnel)
+      save(snapshot)
+      return funnel
+    },
+    async update(id, input) {
       const snapshot = load()
       const index = snapshot.funnels.findIndex((f) => f.id === id)
       if (index < 0) throw new NotFoundError('Funnel', id)
       const current = snapshot.funnels[index]!
-      const updated: MarketingFunnel = {
+      let updated: ProductFunnel = {
         ...current,
         name: input.name ?? current.name,
         stages: input.stages ?? current.stages,
-        costs: {
-          mediaSpend: input.costs?.mediaSpend ?? current.costs.mediaSpend,
-          agency: input.costs?.agency ?? current.costs.agency,
-          personnel: input.costs?.personnel ?? current.costs.personnel,
-          tools: input.costs?.tools ?? current.costs.tools,
-        },
         updatedAt: nowIso(),
+      }
+      if (current.type === 'marketing' && updated.type === 'marketing' && input.marketingCosts) {
+        updated = {
+          ...updated,
+          costs: {
+            mediaSpend: input.marketingCosts.mediaSpend ?? current.costs.mediaSpend,
+            agency: input.marketingCosts.agency ?? current.costs.agency,
+            personnel: input.marketingCosts.personnel ?? current.costs.personnel,
+            tools: input.marketingCosts.tools ?? current.costs.tools,
+          },
+        }
+      }
+      if (current.type === 'sales' && updated.type === 'sales' && input.salesCosts) {
+        updated = {
+          ...updated,
+          costs: {
+            personnel: input.salesCosts.personnel ?? current.costs.personnel,
+            crm: input.salesCosts.crm ?? current.costs.crm,
+            commission: input.salesCosts.commission ?? current.costs.commission,
+            tools: input.salesCosts.tools ?? current.costs.tools,
+          },
+        }
       }
       snapshot.funnels[index] = updated
       save(snapshot)

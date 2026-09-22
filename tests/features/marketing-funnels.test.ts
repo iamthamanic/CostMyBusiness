@@ -109,8 +109,10 @@ describe('marketing funnel repository', () => {
     expect(listed).toHaveLength(1)
 
     const updated = await repos.funnels.update(funnel.id, {
-      costs: { mediaSpend: 2000, agency: 100 },
+      marketingCosts: { mediaSpend: 2000, agency: 100 },
     })
+    expect(updated.type).toBe('marketing')
+    if (updated.type !== 'marketing') throw new Error('expected marketing')
     expect(updated.costs.mediaSpend).toBe(2000)
     expect(updated.costs.agency).toBe(100)
 

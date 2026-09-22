@@ -8,7 +8,12 @@ import { useRepos, useWorkspaceId } from '@/app/providers/ReposProvider'
 import type { DomainModel } from '@/core/model'
 import { buildProductModel, CostGraphWorkbench } from '@/features/cost-graph'
 import type { Product } from '@/features/products'
-import { MarketingFunnelsPanel } from '@/features/funnels'
+import {
+  BreakEvenPanel,
+  FunnelFilterPanel,
+  MarketingFunnelsPanel,
+  SalesFunnelsPanel,
+} from '@/features/funnels'
 import { ContextPeriodChrome } from '@/features/scenarios'
 import {
   DuplicateTemplateNameError,
@@ -171,7 +176,10 @@ export function ProductDetailPage() {
             : resolveTemplateId(product)
         }
       />
+      <FunnelFilterPanel productId={product.id} model={model} />
+      <BreakEvenPanel />
       <MarketingFunnelsPanel productId={product.id} />
+      <SalesFunnelsPanel productId={product.id} />
     </section>
   )
 }

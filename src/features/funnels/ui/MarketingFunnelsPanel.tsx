@@ -28,7 +28,9 @@ export function MarketingFunnelsPanel({ productId }: Props) {
   }, [productId])
 
   async function reload() {
-    const list = await repos.funnels.listByProduct(productId)
+    const list = (await repos.funnels.listByProduct(productId)).filter(
+      (f): f is MarketingFunnel => f.type === 'marketing',
+    )
     setFunnels(list)
     if (list.length > 0 && !list.some((f) => f.id === selectedId)) {
       setSelectedId(list[0]!.id)
@@ -60,14 +62,16 @@ export function MarketingFunnelsPanel({ productId }: Props) {
 
   async function patchSelected(patch: {
     stages?: MarketingFunnel['stages']
-    costs?: Partial<MarketingFunnel['costs']>
+    marketingCosts?: Partial<MarketingFunnel['costs']>
     name?: string
   }) {
     if (!selected) return
     setError(null)
     try {
       const updated = await repos.funnels.update(selected.id, patch)
-      setFunnels((prev) => prev.map((f) => (f.id === updated.id ? updated : f)))
+      if (updated.type === 'marketing') {
+        setFunnels((prev) => prev.map((f) => (f.id === updated.id ? updated : f)))
+      }
     } catch {
       setError('Änderungen konnten nicht gespeichert werden.')
     }
@@ -173,22 +177,22 @@ export function MarketingFunnelsPanel({ productId }: Props) {
             <StageField
               label="Media-Spend (EUR)"
               value={String(selected.costs.mediaSpend)}
-              onChange={(v) => void patchSelected({ costs: { mediaSpend: Number(v) || 0 } })}
+              onChange={(v) => void patchSelected({ marketingCosts: { mediaSpend: Number(v) || 0 } })}
             />
             <StageField
               label="Agentur (EUR)"
               value={String(selected.costs.agency)}
-              onChange={(v) => void patchSelected({ costs: { agency: Number(v) || 0 } })}
+              onChange={(v) => void patchSelected({ marketingCosts: { agency: Number(v) || 0 } })}
             />
             <StageField
               label="Personal (EUR)"
               value={String(selected.costs.personnel)}
-              onChange={(v) => void patchSelected({ costs: { personnel: Number(v) || 0 } })}
+              onChange={(v) => void patchSelected({ marketingCosts: { personnel: Number(v) || 0 } })}
             />
             <StageField
               label="Tools (EUR)"
               value={String(selected.costs.tools)}
-              onChange={(v) => void patchSelected({ costs: { tools: Number(v) || 0 } })}
+              onChange={(v) => void patchSelected({ marketingCosts: { tools: Number(v) || 0 } })}
             />
             <Button variant="danger" onClick={() => void onDelete(selected.id)}>
               Funnel löschen
