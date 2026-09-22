@@ -1,21 +1,19 @@
 /**
- * App-wide local repository provider (single workspace for V1 personal use).
+ * App-wide repository access — prefers AuthProvider remote switch when available.
  * Location: src/app/providers/ReposProvider.tsx
  */
-import { createContext, useContext, useMemo, useRef, type ReactNode } from 'react'
-import { createLocalRepositories, type LocalRepositories } from '@/features/businesses'
+import { createContext, useContext, type ReactNode } from 'react'
+import type { LocalRepositories } from '@/features/businesses'
+import { useAuth } from './AuthProvider'
 
 const DEFAULT_WORKSPACE_ID = 'ws_personal'
 
 const ReposContext = createContext<LocalRepositories | null>(null)
 
+/** Thin bridge so existing useRepos() continues to work under AuthProvider. */
 export function ReposProvider({ children }: { children: ReactNode }) {
-  const reposRef = useRef<LocalRepositories | null>(null)
-  if (!reposRef.current) {
-    reposRef.current = createLocalRepositories()
-  }
-  const value = useMemo(() => reposRef.current!, [])
-  return <ReposContext.Provider value={value}>{children}</ReposContext.Provider>
+  const { repos } = useAuth()
+  return <ReposContext.Provider value={repos}>{children}</ReposContext.Provider>
 }
 
 export function useRepos(): LocalRepositories {

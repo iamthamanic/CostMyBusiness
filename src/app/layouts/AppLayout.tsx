@@ -11,6 +11,7 @@ const nav = [
   { to: '/scenarios', label: 'Szenarien' },
   { to: '/templates', label: 'Vorlagen' },
   { to: '/glossary', label: 'Glossar' },
+  { to: '/auth', label: 'Konto' },
   { to: '/settings', label: 'Einstellungen' },
 ] as const
 
