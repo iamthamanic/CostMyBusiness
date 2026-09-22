@@ -6,14 +6,20 @@ import { z } from 'zod'
 import { BusinessSchema } from '../domain/business'
 import { ProductSchema } from '../../products/domain/product'
 import { MarketingFunnelSchema } from '../../funnels/domain/marketing-funnel'
+import { SalesFunnelSchema } from '../../funnels/domain/sales-funnel'
 import { ProductPlanningStateSchema } from '../../scenarios/domain/planning'
 import { CustomTemplateSchema } from '../../templates/domain/custom-template'
+
+export const ProductFunnelSchema = z.discriminatedUnion('type', [
+  MarketingFunnelSchema,
+  SalesFunnelSchema,
+])
 
 export const LocalSnapshotSchema = z.object({
   version: z.literal(1),
   businesses: z.array(BusinessSchema),
   products: z.array(ProductSchema),
-  funnels: z.array(MarketingFunnelSchema).default([]),
+  funnels: z.array(ProductFunnelSchema).default([]),
   planning: z.array(ProductPlanningStateSchema).default([]),
   customTemplates: z.array(CustomTemplateSchema).default([]),
 })
