@@ -35,6 +35,7 @@ function CostGraphNodeComponent({ data, selected }: NodeProps & { data: FlowNode
       data-view-type={data.viewType}
       data-collapsed={data.collapsed ? 'true' : 'false'}
       data-expanded={data.expanded ? 'true' : 'false'}
+      data-testid={`cost-node-${data.label}`}
     >
       <Handle type="target" position={Position.Top} className="!bg-[color:var(--line-default)]" />
       <div className="flex items-start justify-between gap-2">

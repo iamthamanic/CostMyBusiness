@@ -9,6 +9,7 @@ import {
   MiniMap,
   ReactFlow,
   ReactFlowProvider,
+  useReactFlow,
   type Edge,
   type Node,
   type NodeTypes,
@@ -43,6 +44,7 @@ type Props = {
 
 function WorkbenchInner({ model, onModelChange, templateId, productId }: Props) {
   const repos = useRepos()
+  const { fitView } = useReactFlow()
   const evaluation = useMemo(() => evaluate(model), [model])
   const [nodes, setNodes] = useState<Node<FlowNodeData>[]>([])
   const [funnels, setFunnels] = useState<ProductFunnel[]>([])
@@ -150,6 +152,9 @@ function WorkbenchInner({ model, onModelChange, templateId, productId }: Props) 
         if (!cancelled) {
           setNodes(layouted)
           setLayoutError(null)
+          requestAnimationFrame(() => {
+            void fitView({ padding: 0.2, duration: 0 })
+          })
         }
       } catch {
         if (!cancelled) {
@@ -161,7 +166,7 @@ function WorkbenchInner({ model, onModelChange, templateId, productId }: Props) 
     return () => {
       cancelled = true
     }
-  }, [filteredMapped])
+  }, [filteredMapped, fitView])
 
   const revenueNode = model.nodes.find((n) => n.key === 'revenue')
   const revenue = revenueNode ? evaluation.results[revenueNode.id] : undefined
@@ -370,12 +375,17 @@ function Kpi({
   hint?: string
 }) {
   return (
-    <div>
+    <div data-testid={`kpi-${label.toLowerCase().replace(/\s+/g, '-')}`}>
       <p className="flex items-center text-xs uppercase tracking-wide text-[color:var(--ink-muted)]">
         {label}
         {termId ? <GlossaryHelp termId={termId} /> : null}
       </p>
-      <p className="font-variant-numeric text-xl font-semibold tabular-nums">{value}</p>
+      <p
+        className="font-variant-numeric text-xl font-semibold tabular-nums"
+        data-testid={`kpi-${label.toLowerCase().replace(/\s+/g, '-')}-value`}
+      >
+        {value}
+      </p>
       {hint ? <p className="text-xs text-[color:var(--ink-muted)]">{hint}</p> : null}
     </div>
   )
