@@ -267,6 +267,11 @@ stateDiagram-v2
 | FR-006 | The system shall keep direct costs and allocated/shared costs distinguishable in calculations and UI. | Must | [INFERRED] | Avoid false marginal-cost interpretation | S-001 | SCN-005 | FR-005 |
 | FR-007 | The system shall calculate per-unit and total-period results from the same model. | Must | [CONFIRMED] | Unit economics plus planning | S-001 | SCN-006 | FR-005 |
 | FR-008 | The system shall provide drill-down from top-level result to department/layer, cost node, driver, input, and formula. | Must | [CONFIRMED] | Explainability | S-001 | SCN-007 | FR-002 |
+| FR-008a | Product pricing shall be an explicit source of truth with selling price, price kind (gross\|net), tax/VAT rate, pricing basis (e.g. per_order), and currency; VAT is not a cost node. | Must | [CONFIRMED] | Correct unit economics | S-001 | SCN-026 | FR-002 |
+| FR-008b | Department/layer nodes (Marketing, Sales, Operations, Support, Overhead) shall act as cluster subtotals of concrete child cost/funnel nodes, not as the cost positions themselves. | Must | [CONFIRMED] | Traceable cost tree | S-001 | SCN-027 | FR-002 |
+| FR-008c | Ordinary cost inputs shall be editable inline on Cost Calculator / Funnel nodes in the Cost Graph; the Inspector is secondary for advanced formula, allocation, provenance, and structural actions. | Must | [CONFIRMED] | Visual product calculator UX | S-001 | SCN-028 | FR-005, FR-008 |
+| FR-008d | Cost node inputs shall render from behavior/input-schema definitions (not one hard-coded React component per industry cost). | Must | [CONFIRMED] | Template extensibility | S-003 | SCN-028 | FR-005, FR-019 |
+| FR-008e | Marketing funnels shall appear as specialized nodes in the main cost tree under Marketing while reusing the existing funnel domain and metrics. | Must | [CONFIRMED] | Single economic tree | S-002 | SCN-029 | FR-009, FR-011 |
 | FR-009 | The system shall support marketing funnels with ordered stages and stage conversion rates. | Must | [CONFIRMED] | Acquisition modeling | S-002 | SCN-008 | - |
 | FR-010 | Marketing funnels shall support media spend plus operating costs such as personnel, agency, and tools. | Must | [CONFIRMED] | Fully loaded acquisition cost | S-002 | SCN-008 | FR-009 |
 | FR-011 | The system shall derive applicable funnel metrics including clicks, conversions, CPC, CPA and CAC when required inputs exist. | Must | [CONFIRMED] | Funnel analysis | S-002 | SCN-009 | FR-009 |
@@ -467,6 +472,43 @@ stateDiagram-v2
 - Then: visualization nodes are derived from domain data
 - And: persisted business data does not depend on visualization-library-specific structures.
 
+### SCN-026: Gross / tax / net pricing
+- Covers: `FR-008a`
+- Given: product Halteverbotszone Berlin with gross price 89.00 EUR and VAT 19%
+- When: the product model is evaluated
+- Then: net revenue is 74.79 EUR
+- And: VAT is shown as price normalization, not as a cost position
+- And: pricing fields remain the single source of truth for derived revenue nodes.
+
+### SCN-027: Departments are clusters
+- Covers: `FR-008b`
+- Given: a Traffic Safety / Halteverbotszone template model
+- When: the Cost Graph is shown
+- Then: Marketing, Sales, Operations, Support, and Overhead appear as department clusters
+- And: multiple concrete child cost nodes are visible under Operations without opening the Inspector.
+
+### SCN-028: Inline cost calculator editing
+- Covers: `FR-008c`, `FR-008d`
+- Given: an Operations Fahrer cost calculator node
+- When: the owner changes Vollkosten/Stunde inline on the node
+- Then: Fahrer result, Operations subtotal, total costs, and contribution/profit/margin update immediately
+- And: the Inspector is not required for this flow
+- And: unresolved inputs never display as silent 0, NaN, or Infinity.
+
+### SCN-029: Funnel node in main tree
+- Covers: `FR-008e`
+- Given: a marketing funnel Google Generic exists for the product
+- When: the Cost Graph Marketing department is expanded
+- Then: the funnel appears as a specialized node with editable funnel inputs and derived CAC metrics
+- And: calculation reuses the existing funnel metrics engine (no duplicate domain).
+
+### SCN-030: Core Halteverbotszone calculation E2E
+- Covers: `FR-008a`..`FR-008e`, `FR-006`, `FR-007`
+- Given: owner creates product Halteverbotszone Berlin from the specialized template
+- When: gross 89.00 EUR, VAT 19%, and Fahrer inputs are edited on-node
+- Then: net 74.79 EUR is shown; department clusters and concrete nodes are visible; cascaded totals update without Inspector
+- And: Contribution vs Fully Loaded view keeps direct and allocated costs distinguishable.
+
 <!-- prd-section:edge-cases -->
 ## 9. Edge cases and failure behavior
 
@@ -507,7 +549,7 @@ stateDiagram-v2
 
 ### Screen specifications
 
-- Product workbench is desktop-first and consists of: context/period controls, KPI summary, automatic graph canvas, optional funnel filter, and right-side inspector.
+- Product workbench is desktop-first and consists of: context/period controls, KPI summary, **Cost Graph as primary calculator/editor** (inline inputs on nodes), optional funnel filter / Contribution vs Fully Loaded toggle, and an **optional secondary Inspector** for advanced formula, allocation, provenance, and structural actions.
 - Selecting a node opens its inspector without navigating away.
 - The inspector shows definition, classification, formula source, native period/driver, inputs, calculated outputs, and impact where available.
 - Mobile replaces the free canvas with a hierarchical stack/list plus bottom sheet inspector.
@@ -577,7 +619,7 @@ erDiagram
 |---|---|---|---|---|---|---|
 | Workspace | Ownership boundary | User | id, type | Businesses, custom templates | Created with account; later company-capable | S-004 / A-001 |
 | Business | Container for products | Workspace | id, name, defaultCurrency | Products | Create/update/delete | S-001 |
-| Product | Economic subject | Business | id, name, currency, price metadata | Model, funnels, scenarios | Draft/active/delete | S-001 |
+| Product | Economic subject | Business | id, name, currency, **pricing** (sellingPrice, priceKind gross\|net, taxRate, pricingBasis) | Model, funnels, scenarios | Draft/active/delete | S-001 |
 | Model | Domain graph definition | Product | id, version | Nodes, edges | Versioned with product changes | [PROPOSED] |
 | Node | Revenue/cost/driver/result/group/funnel element | Model | id, type, category, config | Edges, metrics/formulas | Editable | S-001 |
 | Edge | Calculation dependency | Model | sourceNodeId, targetNodeId, relation | Nodes | Generated/validated | S-004 |

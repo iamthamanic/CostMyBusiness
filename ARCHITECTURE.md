@@ -193,13 +193,20 @@ Only concepts shared by multiple feature slices and stable across industries bel
 Owns:
 
 - stable IDs
-- node types
+- node types (`revenue`, `cost`, `group`, `result`, …)
 - edge/dependency contracts
 - typed scalar/value references
 - graph invariants
 - model schema version
+- **product pricing contracts used by calculation** (selling price, priceKind gross|net, taxRate, pricingBasis, currency) when shared across features — VAT/tax normalization is **not** modeled as a cost node
 
 It does not own visual positions or React Flow shapes.
+
+**Product pricing SoR:** Product entity (or a dedicated pricing value object attached to the product) is the single source of truth for list price / tax. Domain revenue nodes **derive** net revenue from that pricing; do not store a second competing price as business truth in the graph without a migration path. Existing `price`-only products migrate as gross (or documented default) with taxRate 0 until set.
+
+**Department / group nodes:** `kind: 'group'` (or equivalent) represents Marketing / Sales / Operations / Support / Overhead clusters. Their calculated value is the subtotal of enabled children. Concrete cost positions remain `kind: 'cost'` (or funnel-linked) children.
+
+**Input schemas:** Cost behaviors map to declarative input field definitions (id, labelDe, unit/basis, required). Templates may extend input sets; the calculation engine consumes normalized `inputs` records only — no industry branches in `core/calculation`.
 
 ### `core/calculation`
 
@@ -321,10 +328,10 @@ It must preserve provenance: an allocated cost result knows its source pool and 
 This boundary is mandatory.
 
 ```text
-Domain Model
+Domain Model (+ Product Pricing SoR)
     |
     v
-Graph View Mapper
+Graph View Mapper (view types + ELK sizes)
     |
     v
 React Flow nodes / edges
@@ -337,11 +344,20 @@ Domain node example:
 ```text
 id
 kind
-category
+category / layerKey / parentId
 label
+costBehavior
+inputs
 formulaRef / driverRef
 classification
 metadata
+enabled
+```
+
+Visualization / view layer may use explicit **view node types** (not industry forks):
+
+```text
+productPriceRoot | revenue | departmentGroup | costCalculator | funnel | result
 ```
 
 Visualization node example may contain:
@@ -351,11 +367,15 @@ position
 width
 height
 selected
+collapsed / expanded
 React component type
 viewport metadata
+measured size for ELK
 ```
 
 Only view-specific values belong to the visualization layer. If user layout positions are persisted, keep them in a separate presentation/layout record keyed by stable domain node ID.
+
+**UX contract:** ordinary scalar edits flow Domain ← Cost Calculator / Funnel view nodes. Inspector writes are for advanced concerns only. Funnel view nodes adapt existing `features/funnels` domain; they must not reimplement CAC metrics.
 
 ## 7. Automatic graph construction
 
@@ -366,15 +386,18 @@ Template/model application creates domain relationships automatically.
 Example:
 
 ```text
-Revenue
-  -> Acquisition
-      -> Marketing funnels
-      -> Sales
-  -> Delivery / Operations
-  -> Support
+Product / Price Root (gross → tax normalize → net)
+  -> Net Revenue
+  -> Marketing (department subtotal)
+      -> funnel / channel cost calculator nodes
+  -> Sales (department)
+  -> Operations (department)
+      -> concrete cost calculator nodes (Fahrer, Fahrzeug, …)
+  -> Support (department)
+  -> Total Direct Cost
   -> Contribution
-  -> Overhead
-  -> Fully Loaded Profit
+  -> Overhead (allocated)
+  -> Fully Loaded Profit / Margin
 ```
 
 A visualization layout engine such as ELK may position nodes, but it never decides business dependencies.

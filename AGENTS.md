@@ -157,16 +157,20 @@ Critical-Verstöße (F-03, B-01, B-04, B-07, B-08, B-09, B-10, P-04, FE-01) bloc
 
 ## Implementation order
 
-Follow the PRD vertical slices unless a later approved design supersedes them:
+Follow the PRD vertical slices unless a later approved design supersedes them. **Workbench UX is superseded by** `.qa/design/visual-product-calculator-corrective.md` (Cost Graph = primary editor).
+
+Historical foundation (largely shipped):
 
 1. Core model + calculation + periods/money.
 2. Safe formula engine.
-3. Product workbench and graph mapper.
+3. Product workbench and graph mapper (now under corrective redesign).
 4. Templates + glossary/guidance.
 5. Funnels.
 6. Actual/Budget/Scenario.
 7. Persistence/auth.
 8. Performance/accessibility/security polish.
+
+**Next coding queue (corrective):** #36 pricing → #37 department tree → #38 inline calculators → #39 Halteverbotszone template V2 → #40 funnel-in-tree → #41 SCN-030 E2E. Then resume #16 / #18 / #19.
 
 Locked delivery decisions for the coding queue (see `.qa/design/v1-mvp-delivery.md`):
 
@@ -174,6 +178,7 @@ Locked delivery decisions for the coding queue (see `.qa/design/v1-mvp-delivery.
 - Persistence: **local adapter first**, Supabase Auth/Postgres/RLS before V1 release (Q-002).
 - Money: **`decimal.js`**, HALF_UP, currency ISO 4217 default **EUR**.
 - Templates/glossary: versioned in repo under `src/data/**` (A-003).
+- **UX:** Cost Graph is the primary calculator and editing surface; Inspector is secondary.
 
 ## Development Workflow
 

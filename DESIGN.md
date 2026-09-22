@@ -4,15 +4,51 @@ Status: Normative V1 UI/UX specification.
 
 ## 1. Product design thesis
 
-CostMyBusiness should feel like a **financial modeling workbench**, not a generic admin dashboard and not a playful workflow builder.
+CostMyBusiness is a **visual product calculator**, not a dashboard with an explanatory graph and a side inspector as the main editor.
 
-The product's visual signature is the **Margin Spine**: a clear vertical economic path that starts with revenue and progressively shows how acquisition, delivery, support and overhead reduce or reshape the result. The graph is the central working object; supporting UI should stay quiet and information-dense around it.
+The product's visual signature is the **Margin Spine**: a clear top-to-bottom economic path that starts with the product selling price and shows where every euro goes until contribution, allocated overhead, profit, and margin remain. The **Cost Graph itself is the primary calculator and editing surface**. Supporting UI stays quiet around it.
 
-The interface must help a user answer three questions at a glance:
+Mental model:
 
-1. What remains?
-2. What caused the result?
-3. What changes if I change this input?
+```text
+PRODUCT (gross price)
+        |
+        v
+TAX / PRICE NORMALIZATION (VAT is not a cost)
+        |
+        v
+NET REVENUE
+        |
+        +------------------+------------------+
+        v                  v                  ...
+   MARKETING          OPERATIONS
+   (department)       (department)
+        |                  |
+   concrete cost      concrete cost
+   / funnel nodes     calculator nodes
+        \                  /
+         +--------+--------+
+                  v
+            TOTAL COST
+                  v
+            CONTRIBUTION
+                  v
+         OVERHEAD / ALLOCATED
+                  v
+               PROFIT
+                  v
+               MARGIN
+```
+
+The interface must help a user answer:
+
+1. From my selling price: where does each euro go?
+2. What remains at the end?
+3. What changes if I change this input **on the node**?
+
+Normative rule (overrides any older wording in this file):
+
+> **The Cost Graph is the primary calculator and editing surface. The Inspector is a secondary advanced-detail surface.**
 
 ## 2. Core UX principles
 
@@ -78,44 +114,39 @@ On narrow screens, navigation becomes a drawer or bottom-accessible menu; do not
 
 ## 4. Main product workbench
 
-Desktop layout:
+Desktop layout — **graph-first calculator** (inspector optional / collapsible):
 
 ```text
 +--------------------------------------------------------------------------------+
 | Product / Business                  Actual v   Sep 2026 v   Month v             |
 +--------------------------------------------------------------------------------+
-| KPI strip: Revenue | CAC | Contribution | Margin | Fully Loaded Profit          |
+| KPI: Net Revenue | CAC | Contribution | Margin | Fully Loaded Profit            |
 +----------------------+---------------------------------------------------------+
-|                      |                                                         |
-| Context / filters    |                  Cost Graph                             |
+| Context / filters    |                  Cost Graph (PRIMARY EDITOR)            |
 | - Funnel             |                                                         |
-| - View               |            [ Revenue ]                                 |
-| - Direct/Loaded      |                 |                                       |
-|                      |         [ Acquisition ]                                 |
-|                      |          /          \                                   |
-|                      |   [Marketing]     [Sales]                               |
-|                      |          \          /                                   |
-|                      |         [Operations]                                    |
-|                      |               |                                         |
-|                      |        [Contribution]                                   |
-|                      |               |                                         |
-|                      |          [Overhead]                                     |
-|                      |               |                                         |
-|                      |            [Profit]                                     |
-|                      |                                                         |
+| - Contribution vs    |   [ Product 89,00 EUR brutto ]                          |
+|   Fully Loaded       |              |                                          |
+| - Collapse / search  |   [ Tax 19% → Net 74,79 ]                               |
+|                      |              |                                          |
+|                      |   [ Marketing ]     [ Operations ]                      |
+|                      |    + Google Ads      + Fahrer  [inputs inline]          |
+|                      |    + SEO             + Fahrzeug …                       |
+|                      |              \      /                                   |
+|                      |           [ Total Cost → Contribution → Profit ]        |
 +----------------------+----------------------------------+----------------------+
-|                                                         | Node Inspector       |
-|                                                         | inputs / formula     |
-+---------------------------------------------------------+----------------------+
+| (optional) Advanced Inspector — formula / allocation / provenance / glossary   |
++--------------------------------------------------------------------------------+
 ```
 
 Recommended desktop regions:
 
 - Top context bar: product, Actual/Budget/Scenario, period, save state.
-- KPI strip: 4-6 decision metrics only.
-- Left utility rail: funnel filter, view mode, compare toggle, graph controls.
-- Center: graph.
-- Right inspector: selected node details.
+- KPI strip: 4–6 decision metrics only.
+- Left utility rail (collapsible): funnel filter, Contribution vs Fully Loaded view, graph controls (fit/zoom/search/collapse).
+- **Center: Cost Graph — primary editing surface for normal inputs.**
+- Right inspector: **secondary**; open on demand for advanced formula, allocation, provenance, glossary, rename/duplicate/delete, extended drivers.
+
+Do not permanently reserve a wide inspector. Normal cost inputs must be editable **inside the selected/expanded node** without opening the inspector.
 
 Do not permanently reserve a wide left rail if no filter is active; allow collapse.
 
@@ -145,7 +176,7 @@ Revenue
 Tap row -> bottom sheet inspector
 ```
 
-A graph view may remain available as a secondary action on capable devices, but the structured hierarchy is the primary mobile experience.
+A graph view may remain available as a secondary action on capable devices, but the structured hierarchy is the primary mobile experience. Hierarchy rows that represent **cost calculator nodes** still expose primary inputs inline (or in an expandable row); the bottom sheet is for advanced inspector concerns, not for every scalar edit.
 
 ## 6. Visual direction
 
@@ -213,58 +244,92 @@ Dense analytical UI should use 8/12/16 more often than oversized whitespace.
 
 ## 7. Cost Graph design
 
-### 7.1 Node anatomy
+### 7.0 Primary calculator rule
+
+The Cost Graph is the **primary calculator and editing surface**. Users edit ordinary drivers and rates **on the node**. Selecting a node may expand it; it must not be required to open the Inspector for everyday cost entry.
+
+### 7.1 View node types (visualization only)
+
+Map domain nodes to a small set of **view** components. Do not hardcode industry logic in React. DomainModel remains SoR; React Flow objects are not persisted as business truth.
+
+| View type | Role |
+|---|---|
+| Product / Price Root | Selling price, price kind (gross/net), VAT, pricing basis, currency |
+| Revenue | Derived net revenue (and related revenue displays) |
+| Department / Group | Cluster subtotal (Marketing, Sales, Operations, Support, Overhead) — not a cost position |
+| Cost Calculator | Concrete cost position with inline inputs + short derivation + result |
+| Funnel | Specialized marketing/sales funnel view over existing funnel domain |
+| Result | Total cost, contribution, allocated overhead, profit, margin |
+
+### 7.2 Department clusters vs cost positions
+
+Marketing, Sales, Operations, Support, and Overhead are **grouping / subtotal nodes**. They are not the cost positions themselves. Each concrete position is its own Cost Calculator (or Funnel) node; the department shows the sum of enabled children.
+
+### 7.3 Cost Calculator node anatomy
+
+Expanded example:
 
 ```text
 +----------------------------------+
-| OPERATIONS                  (?)  |
+| Fahrer                           |
+| Operations · Variable · Direct   |
 |                                  |
-| 29.40 EUR / order                |
-| 39.3% of net revenue             |
+| Vollkosten / Stunde   [ 28,00 ]  |
+| Stunden / Stopp       [  0,30 ]  |
+| Stopps / Auftrag      [  2,00 ]  |
 |                                  |
-| 6 positions                      |
+| 28,00 × 0,30 × 2                 |
+| -------------------------------- |
+| 16,80 EUR / Auftrag              |
 +----------------------------------+
 ```
 
-Each meaningful node supports:
+Every cost calculator node supports at least:
 
-- type/layer label
-- primary calculated value
-- basis (`/ order`, `/ month`, etc.)
-- optional share/delta
-- incomplete/error indicator
-- glossary/help affordance when relevant
-- selected/focus state
+1. Name
+2. Department / cluster
+3. Cost behavior / basis
+4. Relevant editable inputs (schema-driven, not one React component per cost kind)
+5. Short visible formula / derivation
+6. Result for the relevant unit
+7. Unresolved / error state (never silent `0` / `NaN` / `Infinity`)
+8. Collapsed / expanded state (collapsed: name + result only)
 
-### 7.2 Node types
+### 7.4 Inline input rendering
 
-Visual distinction should be restrained:
+Render inputs from `costBehavior` + input definitions (and later template-declared schemas). Examples: `per_hour`, `per_km`, `per_stop`, `fixed_period`, `per_order`, `percentage_revenue`, `custom_formula`. Custom templates must be able to declare input schemas without new React components.
 
-- Revenue node: neutral/analysis emphasis.
-- Cost node: cost semantic accent.
-- Funnel node: analysis accent plus funnel icon/label.
-- Result node: stronger border/value weight.
-- Group node: container/summary treatment.
-- Driver node: compact utility node when displayed.
+### 7.5 Product pricing / tax (not a cost)
 
-Do not assign a random color to every node type.
+VAT / tax normalization sits between gross selling price and economic net revenue. Tax is **not** a cost position. Product pricing fields (gross|net, tax rate, pricing basis, currency) are the source of truth; the graph derives displayed revenue nodes from them (no duplicate SoR).
 
-### 7.3 Edges
+### 7.6 Funnel nodes in the tree
 
-Edges communicate dependency, not decoration.
+Marketing funnels appear as specialized nodes under the Marketing department (budget, stages, operating costs, media CPA / fully-loaded CAC). Reuse existing funnel domain and metrics; do not duplicate calculation in the graph view. Separate funnel panels may remain as secondary surfaces but the main tree must show funnel nodes.
 
-- Default: neutral line.
-- Selected path: analysis accent.
-- Cost reduction direction can use labels/values rather than red arrows everywhere.
-- Avoid continuous edge animation.
+### 7.7 Result spine (bottom of flow)
 
-### 7.4 Layout
+Visible end-of-flow results:
 
-- Automatic layout is default.
-- Primary economic path is top-to-bottom.
-- Parallel funnels branch horizontally and converge before downstream shared costs where appropriate.
-- Graph controls: fit, zoom in/out, reset layout, collapse groups, search.
-- User may reposition nodes for readability, but business structure stays domain-controlled.
+- Total Direct Cost
+- Contribution / Deckungsbeitrag
+- Allocated Overhead
+- Fully Loaded Profit
+- Margin
+
+Direct and allocated must stay distinguishable. A view toggle switches Contribution View vs Fully Loaded View.
+
+### 7.8 Layout
+
+- Automatic top-to-bottom layout remains default.
+- ELK (or equivalent) must use real/expanded node dimensions so multiple concrete cost nodes are visible — not only five large department cards.
+- Controls: fit, zoom, reset layout, collapse/expand departments and nodes, search.
+- Manual wiring is not primary UX.
+- User may reposition for readability; business structure stays domain-controlled.
+
+### 7.9 Edges and visual distinction
+
+Edges communicate dependency, not decoration. Restrained distinction by view type (revenue / cost / funnel / result / group). Do not assign a random color to every node type. Financial meaning must not depend on color alone.
 
 ## 8. KPI strip
 
@@ -288,33 +353,41 @@ CAC
 Needs acquired customers
 ```
 
-## 9. Node Inspector
+## 9. Node Inspector (secondary)
 
-Inspector is the main editing surface.
+The Inspector is a **secondary advanced-detail surface**, not the main editing surface.
 
-Sections in order:
+Use it for:
+
+- Advanced formula editing
+- Allocation configuration
+- Provenance / derivation detail
+- Glossary / help depth
+- Dependencies
+- Rename / duplicate / delete
+- Extended driver configuration beyond the inline schema
+
+Do **not** require the Inspector for ordinary cost inputs (rates, hours, stops, amounts). Those belong on the Cost Calculator / Funnel node.
+
+When open, sections in order:
 
 1. Identity and help
 2. Current result
 3. Classification
-4. Inputs
+4. Inputs (advanced / overflow)
 5. Driver/basis
 6. Formula
 7. Allocation (when applicable)
 8. Impact / dependent metrics
 9. Advanced actions
 
-Example:
+Example (advanced only):
 
 ```text
 Driver
 Operations / Variable / Direct
 
 16.67 EUR per order
-
-Inputs
-Hourly full cost       25.00 EUR
-Hours per order         0.667
 
 Formula
 hourly_cost * hours_per_order
