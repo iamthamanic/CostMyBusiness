@@ -1,10 +1,11 @@
 /**
- * ELK automatic layout for React Flow nodes (positions only; domain remains SoR).
+ * ELK automatic layout — sizes follow view type / collapse state.
  * Location: src/features/cost-graph/application/layout-with-elk.ts
  */
 import ELK from 'elkjs/lib/elk.bundled.js'
 import type { Edge, Node } from '@xyflow/react'
 import type { FlowNodeData } from './map-domain-to-flow'
+import { elkSizeForViewType } from './view-node-type'
 
 const elk = new ELK()
 
@@ -17,14 +18,17 @@ export async function layoutWithElk(
     layoutOptions: {
       'elk.algorithm': 'layered',
       'elk.direction': 'DOWN',
-      'elk.spacing.nodeNode': '48',
-      'elk.layered.spacing.nodeNodeBetweenLayers': '64',
+      'elk.spacing.nodeNode': '40',
+      'elk.layered.spacing.nodeNodeBetweenLayers': '56',
     },
-    children: nodes.map((node) => ({
-      id: node.id,
-      width: 220,
-      height: 88,
-    })),
+    children: nodes.map((node) => {
+      const size = elkSizeForViewType(node.data.viewType, node.data.collapsed)
+      return {
+        id: node.id,
+        width: size.width,
+        height: size.height,
+      }
+    }),
     edges: edges.map((edge) => ({
       id: edge.id,
       sources: [edge.source],

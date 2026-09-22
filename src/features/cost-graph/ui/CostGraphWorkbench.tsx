@@ -1,5 +1,5 @@
 /**
- * Cost graph workbench: KPI strip, desktop React Flow, mobile list, inspector.
+ * Cost graph workbench — graph-first calculator; Inspector secondary.
  * Location: src/features/cost-graph/ui/CostGraphWorkbench.tsx
  */
 import { useEffect, useMemo, useState } from 'react'
@@ -16,20 +16,22 @@ import '@xyflow/react/dist/style.css'
 import { evaluate } from '@/core/calculation'
 import type { DomainModel } from '@/core/model'
 import { GlossaryHelp } from '@/features/glossary'
-import { Button } from '@/shared/ui'
+import { Button, Field } from '@/shared/ui'
 import { layoutWithElk } from '../application/layout-with-elk'
 import { mapDomainToFlow, type FlowNodeData } from '../application/map-domain-to-flow'
+import { resolveViewType } from '../application/view-node-type'
 import { addCostNode } from '../application/mutate-model'
+import { CostGraphNode } from './CostGraphNode'
 import { HierarchyList } from './HierarchyList'
 import { InspectorPanel } from './InspectorPanel'
-import { MarginNode } from './MarginNode'
 
-const nodeTypes = { marginNode: MarginNode } as NodeTypes
+const nodeTypes = { costGraphNode: CostGraphNode } as NodeTypes
+
+type CostView = 'contribution' | 'fullyLoaded'
 
 type Props = {
   model: DomainModel
   onModelChange: (next: DomainModel) => void
-  /** Shipped template id for layer guidance (FR-022). */
   templateId?: string
 }
 
@@ -39,21 +41,44 @@ function WorkbenchInner({ model, onModelChange, templateId }: Props) {
   const contributionNode = model.nodes.find((n) => n.key === 'contribution')
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(contributionNode?.id ?? null)
   const [layoutError, setLayoutError] = useState<string | null>(null)
+  const [inspectorOpen, setInspectorOpen] = useState(false)
+  const [costView, setCostView] = useState<CostView>('contribution')
+  const [search, setSearch] = useState('')
+  const [collapsedDepartments, setCollapsedDepartments] = useState<Set<string>>(() => new Set())
 
-  const mapped = useMemo(() => mapDomainToFlow(model, evaluation), [model, evaluation])
+  const mapped = useMemo(
+    () =>
+      mapDomainToFlow(model, evaluation, {
+        collapsedDepartmentIds: collapsedDepartments,
+        costView,
+      }),
+    [model, evaluation, collapsedDepartments, costView],
+  )
+
+  const filteredMapped = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return mapped
+    const matched = new Set(
+      mapped.nodes.filter((n) => n.data.label.toLowerCase().includes(q)).map((n) => n.id),
+    )
+    return {
+      nodes: mapped.nodes.filter((n) => matched.has(n.id)),
+      edges: mapped.edges.filter((e) => matched.has(e.source) && matched.has(e.target)),
+    }
+  }, [mapped, search])
 
   useEffect(() => {
     let cancelled = false
     void (async () => {
       try {
-        const layouted = await layoutWithElk(mapped.nodes, mapped.edges)
+        const layouted = await layoutWithElk(filteredMapped.nodes, filteredMapped.edges)
         if (!cancelled) {
           setNodes(layouted)
           setLayoutError(null)
         }
       } catch {
         if (!cancelled) {
-          setNodes(mapped.nodes)
+          setNodes(filteredMapped.nodes)
           setLayoutError('Automatisches Layout nicht verfügbar — Fallback-Positionen.')
         }
       }
@@ -61,25 +86,41 @@ function WorkbenchInner({ model, onModelChange, templateId }: Props) {
     return () => {
       cancelled = true
     }
-  }, [mapped])
+  }, [filteredMapped])
 
   const revenueNode = model.nodes.find((n) => n.key === 'revenue')
   const revenue = revenueNode ? evaluation.results[revenueNode.id] : undefined
   const contribution = contributionNode ? evaluation.results[contributionNode.id] : undefined
 
-  const costPeriod = Object.values(evaluation.results)
-    .filter((r) => {
-      const node = model.nodes.find((n) => n.id === r.nodeId)
-      return node?.kind === 'cost' && r.value.status === 'ok'
+  let directPeriod = 0
+  let allocatedPeriod = 0
+  for (const r of Object.values(evaluation.results)) {
+    const node = model.nodes.find((n) => n.id === r.nodeId)
+    if (node?.kind !== 'cost' || r.value.status !== 'ok') continue
+    if (r.provenance.allocationRule === 'allocated') {
+      allocatedPeriod += r.value.periodTotal
+    } else {
+      directPeriod += r.value.periodTotal
+    }
+  }
+
+  const departments = model.nodes.filter((n) => resolveViewType(n) === 'department')
+
+  function toggleDepartment(id: string) {
+    setCollapsedDepartments((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
     })
-    .reduce((sum, r) => sum + (r.value.status === 'ok' ? r.value.periodTotal : 0), 0)
+  }
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="grid flex-1 gap-3 rounded-[12px] border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] p-4 sm:grid-cols-3">
+        <div className="grid flex-1 gap-3 rounded-[12px] border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] p-4 sm:grid-cols-2 lg:grid-cols-4">
           <Kpi
-            label="Umsatz"
+            label="Nettoerlös"
             termId="contribution"
             value={
               revenue?.value.status === 'ok'
@@ -87,15 +128,32 @@ function WorkbenchInner({ model, onModelChange, templateId }: Props) {
                 : 'Unvollständig'
             }
           />
-          <Kpi label="Kosten (aktiv)" value={costPeriod.toFixed(2)} />
           <Kpi
-            label="Deckungsbeitrag"
+            label="Direkte Kosten"
+            value={directPeriod.toFixed(2)}
+            hint="ohne Alloziertes"
+          />
+          <Kpi
+            label={costView === 'contribution' ? 'Deckungsbeitrag' : 'Fully Loaded'}
             termId="contribution"
             value={
-              contribution?.value.status === 'ok'
-                ? `${contribution.value.periodTotal.toFixed(2)}`
-                : 'Unvollständig'
+              costView === 'contribution'
+                ? contribution?.value.status === 'ok'
+                  ? `${contribution.value.periodTotal.toFixed(2)}`
+                  : 'Unvollständig'
+                : (revenue?.value.status === 'ok'
+                    ? (revenue.value.periodTotal - directPeriod - allocatedPeriod).toFixed(2)
+                    : 'Unvollständig')
             }
+          />
+          <Kpi
+            label="Alloziierte Kosten"
+            value={
+              costView === 'fullyLoaded'
+                ? allocatedPeriod.toFixed(2)
+                : 'ausgeblendet'
+            }
+            hint="nur Fully-Loaded-Ansicht"
           />
         </div>
         <Button
@@ -110,23 +168,73 @@ function WorkbenchInner({ model, onModelChange, templateId }: Props) {
         </Button>
       </div>
 
+      <div className="flex flex-wrap items-end gap-3 rounded-[12px] border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] p-3">
+        <div className="flex gap-2" role="group" aria-label="Kostenansicht">
+          <Button
+            variant={costView === 'contribution' ? 'primary' : 'ghost'}
+            onClick={() => setCostView('contribution')}
+          >
+            Contribution
+          </Button>
+          <Button
+            variant={costView === 'fullyLoaded' ? 'primary' : 'ghost'}
+            onClick={() => setCostView('fullyLoaded')}
+          >
+            Fully Loaded
+          </Button>
+        </div>
+        <Field
+          label="Suche im Graph"
+          name="graphSearch"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Fahrer, Operations…"
+        />
+        <Button variant="ghost" onClick={() => setInspectorOpen((o) => !o)}>
+          {inspectorOpen ? 'Inspector schließen' : 'Inspector (Advanced)'}
+        </Button>
+        <div className="flex flex-wrap gap-2">
+          {departments.map((d) => (
+            <button
+              key={d.id}
+              type="button"
+              className="rounded-md border border-[color:var(--line-default)] bg-white px-2 py-1 text-xs"
+              aria-pressed={collapsedDepartments.has(d.id)}
+              onClick={() => toggleDepartment(d.id)}
+            >
+              {d.label} {collapsedDepartments.has(d.id) ? '▶' : '▼'}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {layoutError ? (
         <p className="text-sm text-[color:var(--semantic-warning)]" role="status">
           {layoutError}
         </p>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
-        <div className="hidden h-[480px] rounded-[12px] border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] md:block">
+      <div
+        className={`grid gap-4 ${
+          inspectorOpen ? 'lg:grid-cols-[1fr_300px]' : 'lg:grid-cols-1'
+        }`}
+      >
+        <div className="hidden h-[640px] rounded-[12px] border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] md:block">
           <ReactFlow
             nodes={nodes}
-            edges={mapped.edges}
+            edges={filteredMapped.edges}
             nodeTypes={nodeTypes}
             fitView
             nodesDraggable={false}
             nodesConnectable={false}
             elementsSelectable
-            onNodeClick={(_, node) => setSelectedNodeId(node.id)}
+            onNodeClick={(_, node) => {
+              setSelectedNodeId(node.id)
+              const data = node.data as FlowNodeData
+              if (data.viewType === 'department') {
+                toggleDepartment(node.id)
+              }
+            }}
             proOptions={{ hideAttribution: true }}
           >
             <Background />
@@ -139,17 +247,26 @@ function WorkbenchInner({ model, onModelChange, templateId }: Props) {
           model={model}
           evaluation={evaluation}
           selectedNodeId={selectedNodeId}
-          onSelect={setSelectedNodeId}
+          onSelect={(id) => {
+            setSelectedNodeId(id)
+          }}
         />
 
-        <InspectorPanel
-          model={model}
-          selectedNodeId={selectedNodeId}
-          results={evaluation.results}
-          onModelChange={onModelChange}
-          onSelectNode={setSelectedNodeId}
-          templateId={templateId}
-        />
+        {inspectorOpen ? (
+          <InspectorPanel
+            model={model}
+            selectedNodeId={selectedNodeId}
+            results={evaluation.results}
+            onModelChange={onModelChange}
+            onSelectNode={setSelectedNodeId}
+            templateId={templateId}
+          />
+        ) : (
+          <p className="hidden text-sm text-[color:var(--ink-muted)] lg:block">
+            Inspector ist sekundär — normale Kosten werden später direkt im Node bearbeitet.
+            Öffnen Sie „Inspector (Advanced)“ für Formel/Allokation.
+          </p>
+        )}
       </div>
     </div>
   )
@@ -159,10 +276,12 @@ function Kpi({
   label,
   value,
   termId,
+  hint,
 }: {
   label: string
   value: string
   termId?: string
+  hint?: string
 }) {
   return (
     <div>
@@ -171,6 +290,7 @@ function Kpi({
         {termId ? <GlossaryHelp termId={termId} /> : null}
       </p>
       <p className="font-variant-numeric text-xl font-semibold tabular-nums">{value}</p>
+      {hint ? <p className="text-xs text-[color:var(--ink-muted)]">{hint}</p> : null}
     </div>
   )
 }
