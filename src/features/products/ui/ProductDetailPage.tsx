@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useRepos, useWorkspaceId } from '@/app/providers/ReposProvider'
+import { resolveNetRevenue } from '@/core/pricing'
 import type { DomainModel } from '@/core/model'
 import { buildProductModel, CostGraphWorkbench } from '@/features/cost-graph'
 import type { Product } from '@/features/products'
@@ -134,6 +135,32 @@ export function ProductDetailPage() {
             Produkt-Workbench · Vorlage {resolveTemplateId(product)}
           </p>
           <h1 className="text-2xl font-semibold">{product.name}</h1>
+          {(() => {
+            const pricing = resolveNetRevenue({
+              sellingPrice: product.sellingPrice,
+              priceKind: product.priceKind,
+              taxRatePercent: product.taxRatePercent,
+              pricingBasis: product.pricingBasis,
+              currency: product.currency,
+            })
+            if (pricing.status !== 'ok') {
+              return (
+                <p role="status" className="mt-1 text-sm text-[color:var(--semantic-warning)]">
+                  {pricing.messageDe}
+                </p>
+              )
+            }
+            return (
+              <p className="mt-1 text-sm text-[color:var(--ink-muted)]">
+                {pricing.grossRevenue.toFixed(2)} {product.currency}{' '}
+                {product.priceKind === 'gross' ? 'brutto' : 'brutto-äquiv.'} · USt{' '}
+                {product.taxRatePercent}% (keine Kostenposition) → Nettoerlös{' '}
+                <span className="font-medium tabular-nums text-[color:var(--ink-primary)]">
+                  {pricing.netRevenue.toFixed(2)} {product.currency}
+                </span>
+              </p>
+            )
+          })()}
         </div>
         <Link to="/products" className="text-sm text-[color:var(--accent-analysis)]">
           Zurück zur Produktliste

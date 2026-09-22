@@ -12,7 +12,8 @@ import {
 import type { BusinessRepository } from '../application/business-repository'
 import type { Business, CreateBusinessInput, UpdateBusinessInput } from '../domain/business'
 import type { ProductRepository } from '../../products/application/product-repository'
-import type { CreateProductInput, Product, UpdateProductInput } from '../../products/domain/product'
+import type { CreateProductInput, UpdateProductInput } from '../../products/domain/product'
+import { normalizePricingInput, ProductSchema } from '../../products/domain/product'
 import type { FunnelRepository } from '../../funnels/application/funnel-repository'
 import {
   defaultMarketingStages,
@@ -171,18 +172,30 @@ export function createLocalRepositories(storage?: StorageLike): LocalRepositorie
       const business = snapshot.businesses.find((b) => b.id === input.businessId)
       if (!business) throw new NotFoundError('Business', input.businessId)
       const ts = nowIso()
-      const product: Product = {
+      const pricing = normalizePricingInput({
+        price: input.price,
+        sellingPrice: input.sellingPrice,
+        priceKind: input.priceKind,
+        taxRatePercent: input.taxRatePercent,
+        pricingBasis: input.pricingBasis,
+        currency: input.currency ?? business.defaultCurrency ?? DEFAULT_CURRENCY,
+      })
+      const product = ProductSchema.parse({
         id: newId('prd'),
         businessId: input.businessId,
         name: input.name,
-        currency: input.currency ?? business.defaultCurrency ?? DEFAULT_CURRENCY,
-        price: input.price,
+        currency: pricing.currency,
+        sellingPrice: pricing.sellingPrice,
+        price: pricing.sellingPrice,
+        priceKind: pricing.priceKind,
+        taxRatePercent: pricing.taxRatePercent,
+        pricingBasis: pricing.pricingBasis,
         templateId: input.templateId ?? 'custom',
         templateVersion: input.templateVersion,
         includedOptionalKeys: input.includedOptionalKeys,
         createdAt: ts,
         updatedAt: ts,
-      }
+      })
       snapshot.products.push(product)
       save(snapshot)
       return product
@@ -192,16 +205,28 @@ export function createLocalRepositories(storage?: StorageLike): LocalRepositorie
       const index = snapshot.products.findIndex((p) => p.id === id)
       if (index < 0) throw new NotFoundError('Product', id)
       const current = snapshot.products[index]!
-      const updated: Product = {
+      const pricing = normalizePricingInput({
+        price: input.price ?? current.price,
+        sellingPrice: input.sellingPrice ?? current.sellingPrice,
+        priceKind: input.priceKind ?? current.priceKind,
+        taxRatePercent: input.taxRatePercent ?? current.taxRatePercent,
+        pricingBasis: input.pricingBasis ?? current.pricingBasis,
+        currency: input.currency ?? current.currency,
+      })
+      const updated = ProductSchema.parse({
         ...current,
         name: input.name ?? current.name,
-        currency: input.currency ?? current.currency,
-        price: input.price ?? current.price,
+        currency: pricing.currency,
+        sellingPrice: pricing.sellingPrice,
+        price: pricing.sellingPrice,
+        priceKind: pricing.priceKind,
+        taxRatePercent: pricing.taxRatePercent,
+        pricingBasis: pricing.pricingBasis,
         templateId: input.templateId ?? current.templateId,
         templateVersion: input.templateVersion ?? current.templateVersion,
         includedOptionalKeys: input.includedOptionalKeys ?? current.includedOptionalKeys,
         updatedAt: nowIso(),
-      }
+      })
       snapshot.products[index] = updated
       save(snapshot)
       return updated

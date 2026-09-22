@@ -23,6 +23,9 @@ type ProductRow = {
   name: string
   currency: string
   price: number | null
+  price_kind: 'gross' | 'net'
+  tax_rate_percent: number
+  pricing_basis: 'per_order' | 'per_unit' | 'per_customer' | 'per_month'
   template_id: string
   template_version: number | null
   included_optional_keys: Json
@@ -64,6 +67,9 @@ export type Database = {
           name: string
           currency?: string
           price?: number | null
+          price_kind?: 'gross' | 'net'
+          tax_rate_percent?: number
+          pricing_basis?: 'per_order' | 'per_unit' | 'per_customer' | 'per_month'
           template_id?: string
           template_version?: number | null
           included_optional_keys?: Json
@@ -77,6 +83,9 @@ export type Database = {
           name?: string
           currency?: string
           price?: number | null
+          price_kind?: 'gross' | 'net'
+          tax_rate_percent?: number
+          pricing_basis?: 'per_order' | 'per_unit' | 'per_customer' | 'per_month'
           template_id?: string
           template_version?: number | null
           included_optional_keys?: Json
