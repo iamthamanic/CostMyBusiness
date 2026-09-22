@@ -45,6 +45,8 @@ test.describe('SCN-030 Halteverbotszone core calculation', () => {
     test.setTimeout(90_000)
 
     await createBusinessAndProduct(page)
+    await expect(page.getByTestId('workbench-canvas')).toBeVisible()
+    await expect(page.getByTestId('connector-fan-down')).toBeVisible()
     await page.screenshot({ path: path.join(EVIDENCE, '01-product-opened.png'), fullPage: true })
 
     await expect(page.getByTestId('product-root-price')).toHaveValue('89')

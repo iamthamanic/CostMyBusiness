@@ -25,23 +25,35 @@ export function ProductRootCard({ product, onPricingChange }: Props) {
 
   return (
     <div
-      className="mx-auto w-full max-w-xl rounded-[14px] border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] p-5 shadow-[0_1px_2px_rgba(23,32,51,0.06)]"
+      className="w-full max-w-lg rounded-[16px] border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] p-5 shadow-[0_2px_8px_rgba(23,32,51,0.06)]"
       data-testid="product-root"
     >
-      <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--ink-muted)]">
-        Produkt
-      </p>
-      <h2 className="mt-1 text-xl font-semibold text-[color:var(--ink-primary)]">{product.name}</h2>
-      <p className="mt-0.5 text-sm text-[color:var(--ink-muted)]">
-        {product.pricingBasis === 'per_order'
-          ? 'pro Auftrag'
-          : product.pricingBasis === 'per_customer'
-            ? 'pro Kunde'
-            : product.pricingBasis === 'per_month'
-              ? 'pro Monat'
-              : 'pro Einheit'}{' '}
-        · {product.currency}
-      </p>
+      <div className="flex items-start gap-3">
+        <span
+          className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#e8eefc] text-sm font-bold text-[color:var(--accent-analysis)]"
+          aria-hidden
+        >
+          P
+        </span>
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--ink-muted)]">
+            Produkt
+          </p>
+          <h2 className="text-xl font-semibold tracking-tight text-[color:var(--ink-primary)]">
+            {product.name}
+          </h2>
+          <p className="mt-0.5 text-sm text-[color:var(--ink-muted)]">
+            {product.pricingBasis === 'per_order'
+              ? 'pro Auftrag'
+              : product.pricingBasis === 'per_customer'
+                ? 'pro Kunde'
+                : product.pricingBasis === 'per_month'
+                  ? 'pro Monat'
+                  : 'pro Einheit'}{' '}
+            · {product.currency}
+          </p>
+        </div>
+      </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-sm">

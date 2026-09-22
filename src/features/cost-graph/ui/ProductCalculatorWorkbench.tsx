@@ -8,6 +8,7 @@ import type { DomainModel } from '@/core/model'
 import { useRepos } from '@/app/providers/ReposProvider'
 import type { Product } from '@/features/products'
 import type { ProductFunnel } from '@/features/funnels'
+import { Button } from '@/shared/ui'
 import { applyResolvedValuesToModel } from '../application/apply-resolved-values'
 import { composeFunnelsIntoModel } from '../application/compose-funnels-into-model'
 import { addCostNode, updateNodeInputs } from '../application/mutate-model'
@@ -16,6 +17,7 @@ import { DepartmentColumn } from './DepartmentColumn'
 import { ProductRootCard } from './ProductRootCard'
 import { ResultSpine } from './ResultSpine'
 import { CostGraphWorkbench } from './CostGraphWorkbench'
+import { WorkbenchFanConnector, WorkbenchStemConnector } from './WorkbenchConnectors'
 
 type Props = {
   product: Product
@@ -25,6 +27,8 @@ type Props = {
   resolvedValues?: Record<string, number>
   showExpertGraph?: boolean
 }
+
+type CostView = 'contribution' | 'fullyLoaded'
 
 export function ProductCalculatorWorkbench({
   product,
@@ -40,6 +44,8 @@ export function ProductCalculatorWorkbench({
   const [collapsedDepts, setCollapsedDepts] = useState<Set<string>>(() => new Set())
   const [expandedRows, setExpandedRows] = useState<Set<string>>(() => new Set())
   const [mobileOpen, setMobileOpen] = useState<Set<string>>(() => new Set(['operations']))
+  const [costView, setCostView] = useState<CostView>('fullyLoaded')
+  const [zoom, setZoom] = useState(1)
 
   useEffect(() => {
     void (async () => {
@@ -87,126 +93,203 @@ export function ProductCalculatorWorkbench({
     onModelChange(updateNodeInputs(model, nodeId, { [fieldId]: value }))
   }
 
-  return (
-    <div className="flex flex-col gap-6" data-testid="product-calculator-workbench">
-      <ProductRootCard
-        product={product}
-        onPricingChange={(patch) => {
-          const nextProduct: Product = {
-            ...product,
-            ...patch,
-            price: patch.sellingPrice ?? product.sellingPrice,
-            updatedAt: new Date().toISOString(),
-          }
-          onProductChange(nextProduct)
-        }}
-      />
+  function onPricingChange(patch: {
+    sellingPrice?: number
+    taxRatePercent?: number
+    priceKind?: 'gross' | 'net'
+  }) {
+    onProductChange({
+      ...product,
+      ...patch,
+      price: patch.sellingPrice ?? product.sellingPrice,
+      updatedAt: new Date().toISOString(),
+    })
+  }
 
+  function onAddCostToDept(deptNodeId: string) {
+    const next = addCostNode(model)
+    const added = next.nodes[next.nodes.length - 1]
+    if (added) {
+      onModelChange({
+        ...next,
+        nodes: next.nodes.map((n) =>
+          n.id === added.id ? { ...n, parentId: deptNodeId } : n,
+        ),
+      })
+    } else {
+      onModelChange(next)
+    }
+  }
+
+  const hideAllocated = costView === 'contribution'
+  const deptCount = Math.max(view.departments.length, 1)
+
+  return (
+    <div className="flex flex-col gap-2" data-testid="product-calculator-workbench">
       {funnelError ? (
         <p className="text-sm text-[color:var(--semantic-cost)]" role="alert">
           {funnelError}
         </p>
       ) : null}
 
-      {/* Desktop department grid */}
       <div
-        className="hidden gap-3 overflow-x-auto pb-2 md:grid md:min-w-[1280px] md:grid-cols-5"
-        data-testid="department-grid"
+        className="overflow-x-auto rounded-[16px] border border-[color:var(--line-default)] bg-[color:var(--surface-canvas)] p-4 md:p-6"
+        data-testid="workbench-canvas"
       >
-        {view.departments.map((dept) => (
-          <DepartmentColumn
-            key={dept.nodeId}
-            department={dept}
-            collapsed={collapsedDepts.has(dept.nodeId)}
-            expandedRowIds={expandedRows}
-            onToggleCollapse={() => {
-              setCollapsedDepts((prev) => {
-                const next = new Set(prev)
-                if (next.has(dept.nodeId)) next.delete(dept.nodeId)
-                else next.add(dept.nodeId)
-                return next
-              })
-            }}
-            onToggleRow={(id) => {
-              setExpandedRows((prev) => {
-                const next = new Set(prev)
-                if (next.has(id)) next.delete(id)
-                else next.add(id)
-                return next
-              })
-            }}
-            onInputChange={onCostInput}
-            onAddCost={() => {
-              const next = addCostNode(model)
-              const added = next.nodes[next.nodes.length - 1]
-              if (added) {
-                onModelChange({
-                  ...next,
-                  nodes: next.nodes.map((n) =>
-                    n.id === added.id ? { ...n, parentId: dept.nodeId } : n,
-                  ),
-                })
-              } else {
-                onModelChange(next)
-              }
-            }}
-          />
-        ))}
-      </div>
+        <div
+          className="mx-auto origin-top transition-transform md:min-w-[1100px]"
+          style={{
+            transform: `scale(${zoom})`,
+            width: zoom === 1 ? '100%' : `${100 / zoom}%`,
+          }}
+        >
+          <div className="flex justify-center">
+            <ProductRootCard product={product} onPricingChange={onPricingChange} />
+          </div>
 
-      {/* Mobile accordions */}
-      <div className="flex flex-col gap-3 md:hidden" data-testid="department-accordions">
-        {view.departments.map((dept) => {
-          const open = mobileOpen.has(dept.nodeId)
-          return (
-            <div key={dept.nodeId}>
-              <button
-                type="button"
-                className="flex w-full items-center justify-between rounded-[12px] border border-[color:var(--line-default)] bg-white px-3 py-3 text-left"
-                aria-expanded={open}
-                onClick={() => {
-                  setMobileOpen((prev) => {
-                    const next = new Set(prev)
-                    if (next.has(dept.nodeId)) next.delete(dept.nodeId)
-                    else next.add(dept.nodeId)
-                    return next
-                  })
-                }}
-              >
-                <span>
-                  <span className="block text-sm font-semibold">{dept.label}</span>
-                  <span className="text-xs text-[color:var(--ink-muted)]">
-                    {dept.totalPerUnit !== null ? `${dept.totalPerUnit.toFixed(2)} €` : '—'}
-                  </span>
-                </span>
-                <span className="text-xs">{open ? '▼' : '▶'}</span>
-              </button>
-              {open ? (
-                <div className="mt-2">
-                  <DepartmentColumn
-                    department={dept}
-                    collapsed={false}
-                    expandedRowIds={expandedRows}
-                    onToggleCollapse={() => undefined}
-                    onToggleRow={(id) => {
-                      setExpandedRows((prev) => {
+          {/* Desktop: fan → departments → fan */}
+          <div className="hidden md:block">
+            <WorkbenchStemConnector />
+            <WorkbenchFanConnector branches={deptCount} direction="down" />
+
+            <div
+              className="grid gap-3"
+              style={{
+                gridTemplateColumns: `repeat(${deptCount}, minmax(200px, 1fr))`,
+              }}
+              data-testid="department-grid"
+            >
+              {view.departments.map((dept) => (
+                <DepartmentColumn
+                  key={dept.nodeId}
+                  department={dept}
+                  collapsed={collapsedDepts.has(dept.nodeId)}
+                  expandedRowIds={expandedRows}
+                  hideAllocated={hideAllocated && dept.tone === 'overhead'}
+                  onToggleCollapse={() => {
+                    setCollapsedDepts((prev) => {
+                      const next = new Set(prev)
+                      if (next.has(dept.nodeId)) next.delete(dept.nodeId)
+                      else next.add(dept.nodeId)
+                      return next
+                    })
+                  }}
+                  onToggleRow={(id) => {
+                    setExpandedRows((prev) => {
+                      const next = new Set(prev)
+                      if (next.has(id)) next.delete(id)
+                      else next.add(id)
+                      return next
+                    })
+                  }}
+                  onInputChange={onCostInput}
+                  onAddCost={() => onAddCostToDept(dept.nodeId)}
+                />
+              ))}
+            </div>
+
+            <WorkbenchFanConnector branches={deptCount} direction="up" />
+            <WorkbenchStemConnector />
+          </div>
+
+          {/* Mobile: department accordions */}
+          <div className="mt-4 flex flex-col gap-3 md:hidden" data-testid="department-accordions">
+            {view.departments.map((dept) => {
+              const open = mobileOpen.has(dept.nodeId)
+              return (
+                <div key={dept.nodeId}>
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between rounded-[12px] border border-[color:var(--line-default)] bg-white px-3 py-3 text-left"
+                    aria-expanded={open}
+                    onClick={() => {
+                      setMobileOpen((prev) => {
                         const next = new Set(prev)
-                        if (next.has(id)) next.delete(id)
-                        else next.add(id)
+                        if (next.has(dept.nodeId)) next.delete(dept.nodeId)
+                        else next.add(dept.nodeId)
                         return next
                       })
                     }}
-                    onInputChange={onCostInput}
-                    onAddCost={() => onModelChange(addCostNode(model))}
-                  />
+                  >
+                    <span>
+                      <span className="block text-sm font-semibold">{dept.label}</span>
+                      <span className="text-xs text-[color:var(--ink-muted)]">
+                        {dept.totalPerUnit !== null ? `${dept.totalPerUnit.toFixed(2)} €` : '—'}
+                      </span>
+                    </span>
+                    <span className="text-xs">{open ? '▼' : '▶'}</span>
+                  </button>
+                  {open ? (
+                    <div className="mt-2">
+                      <DepartmentColumn
+                        department={dept}
+                        collapsed={false}
+                        expandedRowIds={expandedRows}
+                        hideAllocated={hideAllocated && dept.tone === 'overhead'}
+                        onToggleCollapse={() => undefined}
+                        onToggleRow={(id) => {
+                          setExpandedRows((prev) => {
+                            const next = new Set(prev)
+                            if (next.has(id)) next.delete(id)
+                            else next.add(id)
+                            return next
+                          })
+                        }}
+                        onInputChange={onCostInput}
+                        onAddCost={() => onAddCostToDept(dept.nodeId)}
+                      />
+                    </div>
+                  ) : null}
                 </div>
-              ) : null}
-            </div>
-          )
-        })}
+              )
+            })}
+          </div>
+
+          <div className="mt-4">
+            <ResultSpine spine={view.spine} costView={costView} />
+          </div>
+        </div>
       </div>
 
-      <ResultSpine spine={view.spine} />
+      <footer className="flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-[color:var(--line-default)] bg-white px-3 py-2">
+        <div className="flex items-center gap-2" role="group" aria-label="Ansicht">
+          <span className="text-xs font-medium text-[color:var(--ink-muted)]">Ansicht</span>
+          <Button
+            variant={costView === 'contribution' ? 'primary' : 'ghost'}
+            onClick={() => setCostView('contribution')}
+          >
+            Contribution
+          </Button>
+          <Button
+            variant={costView === 'fullyLoaded' ? 'primary' : 'ghost'}
+            onClick={() => setCostView('fullyLoaded')}
+          >
+            Fully Loaded
+          </Button>
+        </div>
+        <div className="hidden items-center gap-1 md:flex" role="group" aria-label="Zoom">
+          <Button
+            variant="ghost"
+            onClick={() => setZoom((z) => Math.max(0.7, Number((z - 0.1).toFixed(1))))}
+            aria-label="Verkleinern"
+          >
+            −
+          </Button>
+          <span className="min-w-[3.5rem] text-center text-xs tabular-nums text-[color:var(--ink-muted)]">
+            {Math.round(zoom * 100)} %
+          </span>
+          <Button
+            variant="ghost"
+            onClick={() => setZoom((z) => Math.min(1.2, Number((z + 0.1).toFixed(1))))}
+            aria-label="Vergrößern"
+          >
+            +
+          </Button>
+          <Button variant="ghost" onClick={() => setZoom(1)} aria-label="100 Prozent">
+            Fit
+          </Button>
+        </div>
+      </footer>
 
       {showExpertGraph ? (
         <details className="rounded-[12px] border border-[color:var(--line-default)] bg-white p-3">
