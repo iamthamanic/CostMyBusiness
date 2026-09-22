@@ -24,7 +24,8 @@ export async function layoutWithElk(
     children: nodes.map((node) => {
       const base = elkSizeForViewType(node.data.viewType, node.data.collapsed)
       const height =
-        node.data.expanded && node.data.viewType === 'costCalculator'
+        node.data.expanded &&
+        (node.data.viewType === 'costCalculator' || node.data.viewType === 'funnel')
           ? Math.max(base.height, 56 + node.data.schemaFields.length * 52 + 48)
           : base.height
       return {

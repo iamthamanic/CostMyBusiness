@@ -197,6 +197,7 @@ export function ProductDetailPage() {
       <CostGraphWorkbench
         model={model}
         onModelChange={setModel}
+        productId={product.id}
         templateId={
           isCustomTemplateId(resolveTemplateId(product))
             ? 'custom'

@@ -9,14 +9,18 @@ import {
   MiniMap,
   ReactFlow,
   ReactFlowProvider,
+  type Edge,
   type Node,
   type NodeTypes,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { evaluate } from '@/core/calculation'
 import type { DomainModel } from '@/core/model'
+import { useRepos } from '@/app/providers/ReposProvider'
+import type { ProductFunnel } from '@/features/funnels'
 import { GlossaryHelp } from '@/features/glossary'
 import { Button, Field } from '@/shared/ui'
+import { mapFunnelsToFlow } from '../application/funnel-graph-adapter'
 import { layoutWithElk } from '../application/layout-with-elk'
 import { mapDomainToFlow, type FlowNodeData } from '../application/map-domain-to-flow'
 import { resolveViewType } from '../application/view-node-type'
@@ -33,11 +37,16 @@ type Props = {
   model: DomainModel
   onModelChange: (next: DomainModel) => void
   templateId?: string
+  /** When set, marketing/sales funnels are shown as graph nodes under departments. */
+  productId?: string
 }
 
-function WorkbenchInner({ model, onModelChange, templateId }: Props) {
+function WorkbenchInner({ model, onModelChange, templateId, productId }: Props) {
+  const repos = useRepos()
   const evaluation = useMemo(() => evaluate(model), [model])
   const [nodes, setNodes] = useState<Node<FlowNodeData>[]>([])
+  const [funnels, setFunnels] = useState<ProductFunnel[]>([])
+  const [funnelError, setFunnelError] = useState<string | null>(null)
   const contributionNode = model.nodes.find((n) => n.key === 'contribution')
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(contributionNode?.id ?? null)
   const [layoutError, setLayoutError] = useState<string | null>(null)
@@ -47,26 +56,79 @@ function WorkbenchInner({ model, onModelChange, templateId }: Props) {
   const [collapsedDepartments, setCollapsedDepartments] = useState<Set<string>>(() => new Set())
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(() => new Set())
 
-  const mapped = useMemo(
-    () =>
-      mapDomainToFlow(model, evaluation, {
-        collapsedDepartmentIds: collapsedDepartments,
-        costView,
-        expandedNodeIds: expandedNodes,
-        onToggleExpand: (nodeId) => {
-          setExpandedNodes((prev) => {
-            const next = new Set(prev)
-            if (next.has(nodeId)) next.delete(nodeId)
-            else next.add(nodeId)
-            return next
-          })
-        },
-        onInputChange: (nodeId, fieldId, value) => {
-          onModelChange(updateNodeInputs(model, nodeId, { [fieldId]: value }))
-        },
-      }),
-    [model, evaluation, collapsedDepartments, costView, expandedNodes, onModelChange],
-  )
+  useEffect(() => {
+    if (!productId) {
+      setFunnels([])
+      setFunnelError(null)
+      return
+    }
+    void (async () => {
+      try {
+        setFunnels(await repos.funnels.listByProduct(productId))
+        setFunnelError(null)
+      } catch {
+        setFunnelError('Funnels konnten nicht geladen werden.')
+        setFunnels([])
+      }
+    })()
+  }, [productId, repos.funnels])
+
+  const mapped = useMemo(() => {
+    const domainMapped = mapDomainToFlow(model, evaluation, {
+      collapsedDepartmentIds: collapsedDepartments,
+      costView,
+      expandedNodeIds: expandedNodes,
+      onToggleExpand: (nodeId) => {
+        setExpandedNodes((prev) => {
+          const next = new Set(prev)
+          if (next.has(nodeId)) next.delete(nodeId)
+          else next.add(nodeId)
+          return next
+        })
+      },
+      onInputChange: (nodeId, fieldId, value) => {
+        onModelChange(updateNodeInputs(model, nodeId, { [fieldId]: value }))
+      },
+    })
+
+    const funnelMapped = mapFunnelsToFlow(model, funnels, {
+      collapsedDepartmentIds: collapsedDepartments,
+      expandedNodeIds: expandedNodes,
+      onToggleExpand: (nodeId) => {
+        setExpandedNodes((prev) => {
+          const next = new Set(prev)
+          if (next.has(nodeId)) next.delete(nodeId)
+          else next.add(nodeId)
+          return next
+        })
+      },
+      onFunnelCostChange: (funnelId, patch) => {
+        void (async () => {
+          try {
+            const updated = await repos.funnels.update(funnelId, patch)
+            setFunnels((prev) => prev.map((f) => (f.id === updated.id ? updated : f)))
+            setFunnelError(null)
+          } catch {
+            setFunnelError('Funnel-Änderung konnte nicht gespeichert werden.')
+          }
+        })()
+      },
+    })
+
+    return {
+      nodes: [...domainMapped.nodes, ...funnelMapped.nodes] as Node<FlowNodeData>[],
+      edges: [...domainMapped.edges, ...funnelMapped.edges] as Edge[],
+    }
+  }, [
+    model,
+    evaluation,
+    collapsedDepartments,
+    costView,
+    expandedNodes,
+    onModelChange,
+    funnels,
+    repos.funnels,
+  ])
 
   const filteredMapped = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -226,6 +288,17 @@ function WorkbenchInner({ model, onModelChange, templateId }: Props) {
           {layoutError}
         </p>
       ) : null}
+      {funnelError ? (
+        <p className="text-sm text-[color:var(--semantic-cost)]" role="alert">
+          {funnelError}
+        </p>
+      ) : null}
+      {productId && funnels.length === 0 && !funnelError ? (
+        <p className="text-sm text-[color:var(--ink-muted)]" role="status">
+          Keine Funnels im Graph — legen Sie Marketing-/Sales-Funnels unten an, dann erscheinen sie
+          unter dem jeweiligen Department.
+        </p>
+      ) : null}
 
       <div
         className={`grid gap-4 ${
@@ -308,10 +381,15 @@ function Kpi({
   )
 }
 
-export function CostGraphWorkbench({ model, onModelChange, templateId }: Props) {
+export function CostGraphWorkbench({ model, onModelChange, templateId, productId }: Props) {
   return (
     <ReactFlowProvider>
-      <WorkbenchInner model={model} onModelChange={onModelChange} templateId={templateId} />
+      <WorkbenchInner
+        model={model}
+        onModelChange={onModelChange}
+        templateId={templateId}
+        productId={productId}
+      />
     </ReactFlowProvider>
   )
 }
