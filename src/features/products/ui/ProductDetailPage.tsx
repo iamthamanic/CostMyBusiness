@@ -1,10 +1,11 @@
 /**
- * Product detail with cost-graph workbench.
+ * Product detail with editable cost-graph workbench.
  * Location: src/features/products/ui/ProductDetailPage.tsx
  */
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useRepos } from '@/app/providers/ReposProvider'
+import type { DomainModel } from '@/core/model'
 import { buildProductModel, CostGraphWorkbench } from '@/features/cost-graph'
 import type { Product } from '@/features/products'
 
@@ -12,6 +13,7 @@ export function ProductDetailPage() {
   const { productId } = useParams()
   const repos = useRepos()
   const [product, setProduct] = useState<Product | null>(null)
+  const [model, setModel] = useState<DomainModel | null>(null)
   const [state, setState] = useState<'loading' | 'ready' | 'missing'>('loading')
 
   useEffect(() => {
@@ -22,11 +24,15 @@ export function ProductDetailPage() {
       }
       const found = await repos.products.get(productId)
       setProduct(found)
-      setState(found ? 'ready' : 'missing')
+      if (found) {
+        setModel(buildProductModel(found))
+        setState('ready')
+      } else {
+        setModel(null)
+        setState('missing')
+      }
     })()
   }, [productId])
-
-  const model = useMemo(() => (product ? buildProductModel(product) : null), [product])
 
   if (state === 'loading') return <p aria-busy="true">Lädt…</p>
   if (state === 'missing' || !product || !model) {
@@ -51,7 +57,7 @@ export function ProductDetailPage() {
           Zurück zur Produktliste
         </Link>
       </div>
-      <CostGraphWorkbench model={model} />
+      <CostGraphWorkbench model={model} onModelChange={setModel} />
     </section>
   )
 }

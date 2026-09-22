@@ -106,7 +106,17 @@ function computeLeaf(node: DomainNode, volume: number): CalcValue {
       const perUnit = volume === 0 ? 0 : amount / volume
       return { status: 'ok', perUnit, periodTotal: amount }
     }
-    if (behavior === 'per_unit' || behavior === 'per_order') {
+    if (
+      behavior === 'per_unit' ||
+      behavior === 'per_order' ||
+      behavior === 'per_customer' ||
+      behavior === 'per_employee' ||
+      behavior === 'per_km' ||
+      behavior === 'per_stop' ||
+      behavior === 'per_transaction' ||
+      behavior === 'per_click' ||
+      behavior === 'per_api_call'
+    ) {
       const rate = node.inputs.rate
       if (rate === undefined) return unresolved('missing_input', 'Unit cost requires rate')
       return { status: 'ok', perUnit: rate, periodTotal: rate * volume }
@@ -119,6 +129,24 @@ function computeLeaf(node: DomainNode, volume: number): CalcValue {
       }
       const perUnit = rate * hoursPerOrder
       return { status: 'ok', perUnit, periodTotal: perUnit * volume }
+    }
+    if (behavior === 'percentage_revenue') {
+      const percentage = node.inputs.percentage
+      const revenuePerUnit = node.inputs.revenuePerUnit
+      if (percentage === undefined || revenuePerUnit === undefined) {
+        return unresolved('missing_input', 'Percentage cost requires percentage and revenuePerUnit')
+      }
+      const perUnit = (revenuePerUnit * percentage) / 100
+      return { status: 'ok', perUnit, periodTotal: perUnit * volume }
+    }
+    if (behavior === 'custom_formula') {
+      // Formula evaluation is applied by the workbench via formulaRef when set;
+      // without a validated formula, treat rate as fallback per-order cost.
+      const rate = node.inputs.rate
+      if (rate === undefined) {
+        return unresolved('missing_input', 'Custom formula cost requires rate fallback or formula')
+      }
+      return { status: 'ok', perUnit: rate, periodTotal: rate * volume }
     }
     return unresolved('unknown', `Unsupported cost behavior: ${behavior}`)
   }
