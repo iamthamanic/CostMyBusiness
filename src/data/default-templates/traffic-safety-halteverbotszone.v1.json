@@ -12,9 +12,19 @@
       "labelDe": "Marketing",
       "guidance": {
         "generalDe": "Akquisekanäle und Media-/Betriebsaufwand für Nachfrage.",
-        "commonExamplesDe": ["Google Ads", "SEO", "Meta", "Affiliate", "Print"],
+        "commonExamplesDe": [
+          "Google Ads",
+          "SEO",
+          "Meta",
+          "Affiliate",
+          "Print"
+        ],
         "industryDe": "Für Halteverbotszonen oft lokale Suche und Offline-Flyer.",
-        "industryExamplesDe": ["Google Ads Generic", "SEO Standortseiten", "Meta Local"]
+        "industryExamplesDe": [
+          "Google Ads Generic",
+          "SEO Standortseiten",
+          "Meta Local"
+        ]
       }
     },
     {
@@ -22,9 +32,17 @@
       "labelDe": "Sales",
       "guidance": {
         "generalDe": "Kosten der Auftragsgewinnung und Beratung.",
-        "commonExamplesDe": ["Telefon", "Angebot", "CRM", "Provision"],
+        "commonExamplesDe": [
+          "Telefon",
+          "Angebot",
+          "CRM",
+          "Provision"
+        ],
         "industryDe": "Oft telefonische Beratung und Auftragsunterstützung.",
-        "industryExamplesDe": ["Hotline", "Angebotsunterstützung"]
+        "industryExamplesDe": [
+          "Hotline",
+          "Angebotsunterstützung"
+        ]
       }
     },
     {
@@ -32,9 +50,18 @@
       "labelDe": "Operations",
       "guidance": {
         "generalDe": "Direkte Leistungserbringung pro Auftrag.",
-        "commonExamplesDe": ["Behörde", "Fahrer", "Fahrzeug", "Material"],
+        "commonExamplesDe": [
+          "Behörde",
+          "Fahrer",
+          "Fahrzeug",
+          "Material"
+        ],
         "industryDe": "Genehmigung, Auf-/Abbau, Fahrer und Schilder sind Kern.",
-        "industryExamplesDe": ["Behördengebühr", "Fahrer", "Schilder"]
+        "industryExamplesDe": [
+          "Behördengebühr",
+          "Fahrer",
+          "Schilder"
+        ]
       }
     },
     {
@@ -42,9 +69,15 @@
       "labelDe": "Support",
       "guidance": {
         "generalDe": "Nachbearbeitung und Kundenbetreuung.",
-        "commonExamplesDe": ["Kundenservice", "Reklamation"],
+        "commonExamplesDe": [
+          "Kundenservice",
+          "Reklamation"
+        ],
         "industryDe": "Nachbearbeitung und Reklamationen bei Beschwerden vor Ort.",
-        "industryExamplesDe": ["Kundenservice", "Reklamationsbearbeitung"]
+        "industryExamplesDe": [
+          "Kundenservice",
+          "Reklamationsbearbeitung"
+        ]
       }
     },
     {
@@ -52,9 +85,17 @@
       "labelDe": "Overhead",
       "guidance": {
         "generalDe": "Gemeinkosten, die auf Produkte alloziert werden.",
-        "commonExamplesDe": ["HR", "Finance", "IT", "Management"],
+        "commonExamplesDe": [
+          "HR",
+          "Finance",
+          "IT",
+          "Management"
+        ],
         "industryDe": "Zentrale Verwaltung und Versicherungen.",
-        "industryExamplesDe": ["Büro", "Versicherungen"]
+        "industryExamplesDe": [
+          "Büro",
+          "Versicherungen"
+        ]
       }
     }
   ],
@@ -65,7 +106,9 @@
       "labelDe": "Umsatz",
       "required": true,
       "suggested": true,
-      "inputs": { "price": 89 }
+      "inputs": {
+        "price": 89
+      }
     },
     {
       "key": "g_marketing",
@@ -84,8 +127,12 @@
       "suggested": true,
       "layerKey": "marketing",
       "costBehavior": "per_order",
-      "inputs": { "rate": 4.5 },
-      "allocation": { "rule": "direct" }
+      "inputs": {
+        "rate": 3.2
+      },
+      "allocation": {
+        "rule": "direct"
+      }
     },
     {
       "key": "mkt_seo",
@@ -94,9 +141,13 @@
       "required": false,
       "suggested": true,
       "layerKey": "marketing",
-      "costBehavior": "fixed_period",
-      "inputs": { "amount": 600 },
-      "allocation": { "rule": "direct" }
+      "costBehavior": "per_order",
+      "inputs": {
+        "rate": 1.5
+      },
+      "allocation": {
+        "rule": "direct"
+      }
     },
     {
       "key": "mkt_meta",
@@ -106,8 +157,12 @@
       "suggested": true,
       "layerKey": "marketing",
       "costBehavior": "per_order",
-      "inputs": { "rate": 1.8 },
-      "allocation": { "rule": "direct" }
+      "inputs": {
+        "rate": 2.0
+      },
+      "allocation": {
+        "rule": "direct"
+      }
     },
     {
       "key": "mkt_affiliate",
@@ -117,8 +172,12 @@
       "suggested": true,
       "layerKey": "marketing",
       "costBehavior": "percentage_revenue",
-      "inputs": { "percentage": 5, "revenuePerUnit": 74.79 },
-      "allocation": { "rule": "direct" }
+      "inputs": {
+        "percentage": 5
+      },
+      "allocation": {
+        "rule": "direct"
+      }
     },
     {
       "key": "mkt_print",
@@ -127,9 +186,13 @@
       "required": false,
       "suggested": true,
       "layerKey": "marketing",
-      "costBehavior": "fixed_period",
-      "inputs": { "amount": 250 },
-      "allocation": { "rule": "direct" }
+      "costBehavior": "per_order",
+      "inputs": {
+        "rate": 0.7
+      },
+      "allocation": {
+        "rule": "direct"
+      }
     },
     {
       "key": "g_sales",
@@ -148,8 +211,13 @@
       "suggested": true,
       "layerKey": "sales",
       "costBehavior": "per_hour",
-      "inputs": { "rate": 35, "hoursPerOrder": 0.25 },
-      "allocation": { "rule": "direct" }
+      "inputs": {
+        "rate": 25,
+        "hoursPerOrder": 0.25
+      },
+      "allocation": {
+        "rule": "direct"
+      }
     },
     {
       "key": "sales_order_support",
@@ -159,8 +227,12 @@
       "suggested": true,
       "layerKey": "sales",
       "costBehavior": "per_order",
-      "inputs": { "rate": 3.5 },
-      "allocation": { "rule": "direct" }
+      "inputs": {
+        "rate": 1.0
+      },
+      "allocation": {
+        "rule": "direct"
+      }
     },
     {
       "key": "sales_crm",
@@ -169,9 +241,13 @@
       "required": false,
       "suggested": true,
       "layerKey": "sales",
-      "costBehavior": "fixed_period",
-      "inputs": { "amount": 180 },
-      "allocation": { "rule": "direct" }
+      "costBehavior": "per_order",
+      "inputs": {
+        "rate": 0.6
+      },
+      "allocation": {
+        "rule": "direct"
+      }
     },
     {
       "key": "sales_commission",
@@ -181,8 +257,12 @@
       "suggested": true,
       "layerKey": "sales",
       "costBehavior": "percentage_revenue",
-      "inputs": { "percentage": 3, "revenuePerUnit": 74.79 },
-      "allocation": { "rule": "direct" }
+      "inputs": {
+        "percentage": 3
+      },
+      "allocation": {
+        "rule": "direct"
+      }
     },
     {
       "key": "g_operations",
@@ -201,8 +281,12 @@
       "suggested": true,
       "layerKey": "operations",
       "costBehavior": "per_order",
-      "inputs": { "rate": 35 },
-      "allocation": { "rule": "direct" }
+      "inputs": {
+        "rate": 10
+      },
+      "allocation": {
+        "rule": "direct"
+      }
     },
     {
       "key": "ops_order_processing",
@@ -212,8 +296,12 @@
       "suggested": true,
       "layerKey": "operations",
       "costBehavior": "per_order",
-      "inputs": { "rate": 4 },
-      "allocation": { "rule": "direct" }
+      "inputs": {
+        "rate": 2.5
+      },
+      "allocation": {
+        "rule": "direct"
+      }
     },
     {
       "key": "ops_drivers",
@@ -223,8 +311,14 @@
       "suggested": true,
       "layerKey": "operations",
       "costBehavior": "per_hour",
-      "inputs": { "rate": 28, "hoursPerStop": 0.3, "stopsPerOrder": 2 },
-      "allocation": { "rule": "direct" }
+      "inputs": {
+        "rate": 28,
+        "hoursPerStop": 0.3,
+        "stopsPerOrder": 2
+      },
+      "allocation": {
+        "rule": "direct"
+      }
     },
     {
       "key": "ops_vehicle",
@@ -234,8 +328,13 @@
       "suggested": true,
       "layerKey": "operations",
       "costBehavior": "per_km",
-      "inputs": { "rate": 0.45, "quantity": 18 },
-      "allocation": { "rule": "direct" }
+      "inputs": {
+        "rate": 0.7,
+        "quantity": 6
+      },
+      "allocation": {
+        "rule": "direct"
+      }
     },
     {
       "key": "ops_signs",
@@ -245,8 +344,12 @@
       "suggested": true,
       "layerKey": "operations",
       "costBehavior": "per_order",
-      "inputs": { "rate": 12 },
-      "allocation": { "rule": "direct" }
+      "inputs": {
+        "rate": 3.5
+      },
+      "allocation": {
+        "rule": "direct"
+      }
     },
     {
       "key": "ops_storage",
@@ -255,9 +358,13 @@
       "required": false,
       "suggested": true,
       "layerKey": "operations",
-      "costBehavior": "fixed_period",
-      "inputs": { "amount": 320 },
-      "allocation": { "rule": "direct" }
+      "costBehavior": "per_order",
+      "inputs": {
+        "rate": 1.0
+      },
+      "allocation": {
+        "rule": "direct"
+      }
     },
     {
       "key": "ops_payment",
@@ -267,8 +374,12 @@
       "suggested": true,
       "layerKey": "operations",
       "costBehavior": "percentage_revenue",
-      "inputs": { "percentage": 1.9, "revenuePerUnit": 74.79 },
-      "allocation": { "rule": "direct" }
+      "inputs": {
+        "percentage": 1.9
+      },
+      "allocation": {
+        "rule": "direct"
+      }
     },
     {
       "key": "ops_missed_trips",
@@ -278,8 +389,12 @@
       "suggested": true,
       "layerKey": "operations",
       "costBehavior": "per_order",
-      "inputs": { "rate": 2.5 },
-      "allocation": { "rule": "direct" }
+      "inputs": {
+        "rate": 1.0
+      },
+      "allocation": {
+        "rule": "direct"
+      }
     },
     {
       "key": "ops_errors",
@@ -289,8 +404,12 @@
       "suggested": true,
       "layerKey": "operations",
       "costBehavior": "per_order",
-      "inputs": { "rate": 1.5 },
-      "allocation": { "rule": "direct" }
+      "inputs": {
+        "rate": 0.8
+      },
+      "allocation": {
+        "rule": "direct"
+      }
     },
     {
       "key": "ops_subcontractors",
@@ -300,8 +419,12 @@
       "suggested": true,
       "layerKey": "operations",
       "costBehavior": "per_order",
-      "inputs": { "rate": 8 },
-      "allocation": { "rule": "direct" }
+      "inputs": {
+        "rate": 2.0
+      },
+      "allocation": {
+        "rule": "direct"
+      }
     },
     {
       "key": "g_support",
@@ -320,8 +443,12 @@
       "suggested": true,
       "layerKey": "support",
       "costBehavior": "per_order",
-      "inputs": { "rate": 2 },
-      "allocation": { "rule": "direct" }
+      "inputs": {
+        "rate": 2.0
+      },
+      "allocation": {
+        "rule": "direct"
+      }
     },
     {
       "key": "sup_followup",
@@ -331,8 +458,12 @@
       "suggested": true,
       "layerKey": "support",
       "costBehavior": "per_order",
-      "inputs": { "rate": 1.2 },
-      "allocation": { "rule": "direct" }
+      "inputs": {
+        "rate": 1.5
+      },
+      "allocation": {
+        "rule": "direct"
+      }
     },
     {
       "key": "sup_complaints",
@@ -342,8 +473,12 @@
       "suggested": true,
       "layerKey": "support",
       "costBehavior": "per_order",
-      "inputs": { "rate": 0.8 },
-      "allocation": { "rule": "direct" }
+      "inputs": {
+        "rate": 1.0
+      },
+      "allocation": {
+        "rule": "direct"
+      }
     },
     {
       "key": "g_overhead",
@@ -361,9 +496,14 @@
       "required": false,
       "suggested": true,
       "layerKey": "overhead",
-      "costBehavior": "fixed_period",
-      "inputs": { "amount": 400 },
-      "allocation": { "rule": "allocated", "strategy": "per_order" }
+      "costBehavior": "per_order",
+      "inputs": {
+        "rate": 1.2
+      },
+      "allocation": {
+        "rule": "allocated",
+        "strategy": "per_order"
+      }
     },
     {
       "key": "oh_finance",
@@ -372,9 +512,14 @@
       "required": false,
       "suggested": true,
       "layerKey": "overhead",
-      "costBehavior": "fixed_period",
-      "inputs": { "amount": 350 },
-      "allocation": { "rule": "allocated", "strategy": "per_order" }
+      "costBehavior": "per_order",
+      "inputs": {
+        "rate": 1.1
+      },
+      "allocation": {
+        "rule": "allocated",
+        "strategy": "per_order"
+      }
     },
     {
       "key": "oh_it",
@@ -383,9 +528,14 @@
       "required": false,
       "suggested": true,
       "layerKey": "overhead",
-      "costBehavior": "fixed_period",
-      "inputs": { "amount": 500 },
-      "allocation": { "rule": "allocated", "strategy": "per_order" }
+      "costBehavior": "per_order",
+      "inputs": {
+        "rate": 1.5
+      },
+      "allocation": {
+        "rule": "allocated",
+        "strategy": "per_order"
+      }
     },
     {
       "key": "oh_management",
@@ -394,9 +544,14 @@
       "required": false,
       "suggested": true,
       "layerKey": "overhead",
-      "costBehavior": "fixed_period",
-      "inputs": { "amount": 600 },
-      "allocation": { "rule": "allocated", "strategy": "per_order" }
+      "costBehavior": "per_order",
+      "inputs": {
+        "rate": 1.8
+      },
+      "allocation": {
+        "rule": "allocated",
+        "strategy": "per_order"
+      }
     },
     {
       "key": "oh_office",
@@ -405,9 +560,14 @@
       "required": false,
       "suggested": true,
       "layerKey": "overhead",
-      "costBehavior": "fixed_period",
-      "inputs": { "amount": 450 },
-      "allocation": { "rule": "allocated", "strategy": "per_order" }
+      "costBehavior": "per_order",
+      "inputs": {
+        "rate": 1.2
+      },
+      "allocation": {
+        "rule": "allocated",
+        "strategy": "per_order"
+      }
     },
     {
       "key": "oh_insurance",
@@ -416,9 +576,14 @@
       "required": false,
       "suggested": true,
       "layerKey": "overhead",
-      "costBehavior": "fixed_period",
-      "inputs": { "amount": 280 },
-      "allocation": { "rule": "allocated", "strategy": "per_order" }
+      "costBehavior": "per_order",
+      "inputs": {
+        "rate": 1.0
+      },
+      "allocation": {
+        "rule": "allocated",
+        "strategy": "per_order"
+      }
     },
     {
       "key": "contribution",
@@ -438,63 +603,295 @@
     }
   ],
   "edges": [
-    { "sourceKey": "revenue", "targetKey": "contribution", "relation": "feeds" },
-    { "sourceKey": "mkt_google_ads", "targetKey": "contribution", "relation": "feeds" },
-    { "sourceKey": "mkt_seo", "targetKey": "contribution", "relation": "feeds" },
-    { "sourceKey": "mkt_meta", "targetKey": "contribution", "relation": "feeds" },
-    { "sourceKey": "mkt_affiliate", "targetKey": "contribution", "relation": "feeds" },
-    { "sourceKey": "mkt_print", "targetKey": "contribution", "relation": "feeds" },
-    { "sourceKey": "sales_phone", "targetKey": "contribution", "relation": "feeds" },
-    { "sourceKey": "sales_order_support", "targetKey": "contribution", "relation": "feeds" },
-    { "sourceKey": "sales_crm", "targetKey": "contribution", "relation": "feeds" },
-    { "sourceKey": "sales_commission", "targetKey": "contribution", "relation": "feeds" },
-    { "sourceKey": "ops_permit", "targetKey": "contribution", "relation": "feeds" },
-    { "sourceKey": "ops_order_processing", "targetKey": "contribution", "relation": "feeds" },
-    { "sourceKey": "ops_drivers", "targetKey": "contribution", "relation": "feeds" },
-    { "sourceKey": "ops_vehicle", "targetKey": "contribution", "relation": "feeds" },
-    { "sourceKey": "ops_signs", "targetKey": "contribution", "relation": "feeds" },
-    { "sourceKey": "ops_storage", "targetKey": "contribution", "relation": "feeds" },
-    { "sourceKey": "ops_payment", "targetKey": "contribution", "relation": "feeds" },
-    { "sourceKey": "ops_missed_trips", "targetKey": "contribution", "relation": "feeds" },
-    { "sourceKey": "ops_errors", "targetKey": "contribution", "relation": "feeds" },
-    { "sourceKey": "ops_subcontractors", "targetKey": "contribution", "relation": "feeds" },
-    { "sourceKey": "sup_customer_service", "targetKey": "contribution", "relation": "feeds" },
-    { "sourceKey": "sup_followup", "targetKey": "contribution", "relation": "feeds" },
-    { "sourceKey": "sup_complaints", "targetKey": "contribution", "relation": "feeds" },
-    { "sourceKey": "contribution", "targetKey": "profit", "relation": "feeds" },
-    { "sourceKey": "oh_hr", "targetKey": "profit", "relation": "feeds" },
-    { "sourceKey": "oh_finance", "targetKey": "profit", "relation": "feeds" },
-    { "sourceKey": "oh_it", "targetKey": "profit", "relation": "feeds" },
-    { "sourceKey": "oh_management", "targetKey": "profit", "relation": "feeds" },
-    { "sourceKey": "oh_office", "targetKey": "profit", "relation": "feeds" },
-    { "sourceKey": "oh_insurance", "targetKey": "profit", "relation": "feeds" },
-    { "sourceKey": "mkt_google_ads", "targetKey": "g_marketing", "relation": "depends_on" },
-    { "sourceKey": "mkt_seo", "targetKey": "g_marketing", "relation": "depends_on" },
-    { "sourceKey": "mkt_meta", "targetKey": "g_marketing", "relation": "depends_on" },
-    { "sourceKey": "mkt_affiliate", "targetKey": "g_marketing", "relation": "depends_on" },
-    { "sourceKey": "mkt_print", "targetKey": "g_marketing", "relation": "depends_on" },
-    { "sourceKey": "sales_phone", "targetKey": "g_sales", "relation": "depends_on" },
-    { "sourceKey": "sales_order_support", "targetKey": "g_sales", "relation": "depends_on" },
-    { "sourceKey": "sales_crm", "targetKey": "g_sales", "relation": "depends_on" },
-    { "sourceKey": "sales_commission", "targetKey": "g_sales", "relation": "depends_on" },
-    { "sourceKey": "ops_permit", "targetKey": "g_operations", "relation": "depends_on" },
-    { "sourceKey": "ops_order_processing", "targetKey": "g_operations", "relation": "depends_on" },
-    { "sourceKey": "ops_drivers", "targetKey": "g_operations", "relation": "depends_on" },
-    { "sourceKey": "ops_vehicle", "targetKey": "g_operations", "relation": "depends_on" },
-    { "sourceKey": "ops_signs", "targetKey": "g_operations", "relation": "depends_on" },
-    { "sourceKey": "ops_storage", "targetKey": "g_operations", "relation": "depends_on" },
-    { "sourceKey": "ops_payment", "targetKey": "g_operations", "relation": "depends_on" },
-    { "sourceKey": "ops_missed_trips", "targetKey": "g_operations", "relation": "depends_on" },
-    { "sourceKey": "ops_errors", "targetKey": "g_operations", "relation": "depends_on" },
-    { "sourceKey": "ops_subcontractors", "targetKey": "g_operations", "relation": "depends_on" },
-    { "sourceKey": "sup_customer_service", "targetKey": "g_support", "relation": "depends_on" },
-    { "sourceKey": "sup_followup", "targetKey": "g_support", "relation": "depends_on" },
-    { "sourceKey": "sup_complaints", "targetKey": "g_support", "relation": "depends_on" },
-    { "sourceKey": "oh_hr", "targetKey": "g_overhead", "relation": "depends_on" },
-    { "sourceKey": "oh_finance", "targetKey": "g_overhead", "relation": "depends_on" },
-    { "sourceKey": "oh_it", "targetKey": "g_overhead", "relation": "depends_on" },
-    { "sourceKey": "oh_management", "targetKey": "g_overhead", "relation": "depends_on" },
-    { "sourceKey": "oh_office", "targetKey": "g_overhead", "relation": "depends_on" },
-    { "sourceKey": "oh_insurance", "targetKey": "g_overhead", "relation": "depends_on" }
+    {
+      "sourceKey": "revenue",
+      "targetKey": "contribution",
+      "relation": "feeds"
+    },
+    {
+      "sourceKey": "mkt_google_ads",
+      "targetKey": "contribution",
+      "relation": "feeds"
+    },
+    {
+      "sourceKey": "mkt_seo",
+      "targetKey": "contribution",
+      "relation": "feeds"
+    },
+    {
+      "sourceKey": "mkt_meta",
+      "targetKey": "contribution",
+      "relation": "feeds"
+    },
+    {
+      "sourceKey": "mkt_affiliate",
+      "targetKey": "contribution",
+      "relation": "feeds"
+    },
+    {
+      "sourceKey": "mkt_print",
+      "targetKey": "contribution",
+      "relation": "feeds"
+    },
+    {
+      "sourceKey": "sales_phone",
+      "targetKey": "contribution",
+      "relation": "feeds"
+    },
+    {
+      "sourceKey": "sales_order_support",
+      "targetKey": "contribution",
+      "relation": "feeds"
+    },
+    {
+      "sourceKey": "sales_crm",
+      "targetKey": "contribution",
+      "relation": "feeds"
+    },
+    {
+      "sourceKey": "sales_commission",
+      "targetKey": "contribution",
+      "relation": "feeds"
+    },
+    {
+      "sourceKey": "ops_permit",
+      "targetKey": "contribution",
+      "relation": "feeds"
+    },
+    {
+      "sourceKey": "ops_order_processing",
+      "targetKey": "contribution",
+      "relation": "feeds"
+    },
+    {
+      "sourceKey": "ops_drivers",
+      "targetKey": "contribution",
+      "relation": "feeds"
+    },
+    {
+      "sourceKey": "ops_vehicle",
+      "targetKey": "contribution",
+      "relation": "feeds"
+    },
+    {
+      "sourceKey": "ops_signs",
+      "targetKey": "contribution",
+      "relation": "feeds"
+    },
+    {
+      "sourceKey": "ops_storage",
+      "targetKey": "contribution",
+      "relation": "feeds"
+    },
+    {
+      "sourceKey": "ops_payment",
+      "targetKey": "contribution",
+      "relation": "feeds"
+    },
+    {
+      "sourceKey": "ops_missed_trips",
+      "targetKey": "contribution",
+      "relation": "feeds"
+    },
+    {
+      "sourceKey": "ops_errors",
+      "targetKey": "contribution",
+      "relation": "feeds"
+    },
+    {
+      "sourceKey": "ops_subcontractors",
+      "targetKey": "contribution",
+      "relation": "feeds"
+    },
+    {
+      "sourceKey": "sup_customer_service",
+      "targetKey": "contribution",
+      "relation": "feeds"
+    },
+    {
+      "sourceKey": "sup_followup",
+      "targetKey": "contribution",
+      "relation": "feeds"
+    },
+    {
+      "sourceKey": "sup_complaints",
+      "targetKey": "contribution",
+      "relation": "feeds"
+    },
+    {
+      "sourceKey": "contribution",
+      "targetKey": "profit",
+      "relation": "feeds"
+    },
+    {
+      "sourceKey": "oh_hr",
+      "targetKey": "profit",
+      "relation": "feeds"
+    },
+    {
+      "sourceKey": "oh_finance",
+      "targetKey": "profit",
+      "relation": "feeds"
+    },
+    {
+      "sourceKey": "oh_it",
+      "targetKey": "profit",
+      "relation": "feeds"
+    },
+    {
+      "sourceKey": "oh_management",
+      "targetKey": "profit",
+      "relation": "feeds"
+    },
+    {
+      "sourceKey": "oh_office",
+      "targetKey": "profit",
+      "relation": "feeds"
+    },
+    {
+      "sourceKey": "oh_insurance",
+      "targetKey": "profit",
+      "relation": "feeds"
+    },
+    {
+      "sourceKey": "mkt_google_ads",
+      "targetKey": "g_marketing",
+      "relation": "depends_on"
+    },
+    {
+      "sourceKey": "mkt_seo",
+      "targetKey": "g_marketing",
+      "relation": "depends_on"
+    },
+    {
+      "sourceKey": "mkt_meta",
+      "targetKey": "g_marketing",
+      "relation": "depends_on"
+    },
+    {
+      "sourceKey": "mkt_affiliate",
+      "targetKey": "g_marketing",
+      "relation": "depends_on"
+    },
+    {
+      "sourceKey": "mkt_print",
+      "targetKey": "g_marketing",
+      "relation": "depends_on"
+    },
+    {
+      "sourceKey": "sales_phone",
+      "targetKey": "g_sales",
+      "relation": "depends_on"
+    },
+    {
+      "sourceKey": "sales_order_support",
+      "targetKey": "g_sales",
+      "relation": "depends_on"
+    },
+    {
+      "sourceKey": "sales_crm",
+      "targetKey": "g_sales",
+      "relation": "depends_on"
+    },
+    {
+      "sourceKey": "sales_commission",
+      "targetKey": "g_sales",
+      "relation": "depends_on"
+    },
+    {
+      "sourceKey": "ops_permit",
+      "targetKey": "g_operations",
+      "relation": "depends_on"
+    },
+    {
+      "sourceKey": "ops_order_processing",
+      "targetKey": "g_operations",
+      "relation": "depends_on"
+    },
+    {
+      "sourceKey": "ops_drivers",
+      "targetKey": "g_operations",
+      "relation": "depends_on"
+    },
+    {
+      "sourceKey": "ops_vehicle",
+      "targetKey": "g_operations",
+      "relation": "depends_on"
+    },
+    {
+      "sourceKey": "ops_signs",
+      "targetKey": "g_operations",
+      "relation": "depends_on"
+    },
+    {
+      "sourceKey": "ops_storage",
+      "targetKey": "g_operations",
+      "relation": "depends_on"
+    },
+    {
+      "sourceKey": "ops_payment",
+      "targetKey": "g_operations",
+      "relation": "depends_on"
+    },
+    {
+      "sourceKey": "ops_missed_trips",
+      "targetKey": "g_operations",
+      "relation": "depends_on"
+    },
+    {
+      "sourceKey": "ops_errors",
+      "targetKey": "g_operations",
+      "relation": "depends_on"
+    },
+    {
+      "sourceKey": "ops_subcontractors",
+      "targetKey": "g_operations",
+      "relation": "depends_on"
+    },
+    {
+      "sourceKey": "sup_customer_service",
+      "targetKey": "g_support",
+      "relation": "depends_on"
+    },
+    {
+      "sourceKey": "sup_followup",
+      "targetKey": "g_support",
+      "relation": "depends_on"
+    },
+    {
+      "sourceKey": "sup_complaints",
+      "targetKey": "g_support",
+      "relation": "depends_on"
+    },
+    {
+      "sourceKey": "oh_hr",
+      "targetKey": "g_overhead",
+      "relation": "depends_on"
+    },
+    {
+      "sourceKey": "oh_finance",
+      "targetKey": "g_overhead",
+      "relation": "depends_on"
+    },
+    {
+      "sourceKey": "oh_it",
+      "targetKey": "g_overhead",
+      "relation": "depends_on"
+    },
+    {
+      "sourceKey": "oh_management",
+      "targetKey": "g_overhead",
+      "relation": "depends_on"
+    },
+    {
+      "sourceKey": "oh_office",
+      "targetKey": "g_overhead",
+      "relation": "depends_on"
+    },
+    {
+      "sourceKey": "oh_insurance",
+      "targetKey": "g_overhead",
+      "relation": "depends_on"
+    }
   ]
 }

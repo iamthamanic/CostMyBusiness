@@ -9,7 +9,6 @@ import {
   MiniMap,
   ReactFlow,
   ReactFlowProvider,
-  useReactFlow,
   type Edge,
   type Node,
   type NodeTypes,
@@ -44,7 +43,6 @@ type Props = {
 
 function WorkbenchInner({ model, onModelChange, templateId, productId }: Props) {
   const repos = useRepos()
-  const { fitView } = useReactFlow()
   const evaluation = useMemo(() => evaluate(model), [model])
   const [nodes, setNodes] = useState<Node<FlowNodeData>[]>([])
   const [funnels, setFunnels] = useState<ProductFunnel[]>([])
@@ -152,9 +150,6 @@ function WorkbenchInner({ model, onModelChange, templateId, productId }: Props) 
         if (!cancelled) {
           setNodes(layouted)
           setLayoutError(null)
-          requestAnimationFrame(() => {
-            void fitView({ padding: 0.2, duration: 0 })
-          })
         }
       } catch {
         if (!cancelled) {
@@ -166,7 +161,7 @@ function WorkbenchInner({ model, onModelChange, templateId, productId }: Props) 
     return () => {
       cancelled = true
     }
-  }, [filteredMapped, fitView])
+  }, [filteredMapped])
 
   const revenueNode = model.nodes.find((n) => n.key === 'revenue')
   const revenue = revenueNode ? evaluation.results[revenueNode.id] : undefined
@@ -315,7 +310,8 @@ function WorkbenchInner({ model, onModelChange, templateId, productId }: Props) 
             nodes={nodes}
             edges={filteredMapped.edges}
             nodeTypes={nodeTypes}
-            fitView
+            fitView={false}
+            defaultViewport={{ x: 0, y: 0, zoom: 1 }}
             nodesDraggable={false}
             nodesConnectable={false}
             elementsSelectable

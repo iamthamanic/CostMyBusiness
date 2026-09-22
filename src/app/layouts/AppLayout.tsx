@@ -2,7 +2,7 @@
  * Primary app chrome with German navigation.
  * Location: src/app/layouts/AppLayout.tsx
  */
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 
 const nav = [
   { to: '/', label: 'Übersicht', end: true },
@@ -16,15 +16,21 @@ const nav = [
 ] as const
 
 export function AppLayout() {
+  const location = useLocation()
+  const wideWorkbench = /^\/products\/[^/]+/.test(location.pathname)
+  const shellMax = wideWorkbench ? 'max-w-[1800px]' : 'max-w-6xl'
+
   return (
     <div className="min-h-screen bg-[color:var(--surface-canvas)] text-[color:var(--ink-primary)]">
       <header className="border-b border-[color:var(--line-default)] bg-[color:var(--surface-panel)]">
-        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-4 md:flex-row md:items-center md:justify-between">
+        <div
+          className={`mx-auto flex ${shellMax} flex-col gap-3 px-4 py-4 md:flex-row md:items-center md:justify-between`}
+        >
           <div>
             <p className="text-sm font-semibold tracking-wide text-[color:var(--accent-analysis)]">
               CostMyBusiness
             </p>
-            <p className="text-xs text-[color:var(--ink-muted)]">Profitabilitäts-Workbench</p>
+            <p className="text-xs text-[color:var(--ink-muted)]">Visueller Produktkalkulator</p>
           </div>
           <nav aria-label="Hauptnavigation" className="flex flex-wrap gap-1">
             {nav.map((item) => (
@@ -46,7 +52,7 @@ export function AppLayout() {
           </nav>
         </div>
       </header>
-      <div className="mx-auto max-w-6xl px-4 py-6">
+      <div className={`mx-auto ${shellMax} px-4 py-6`}>
         <Outlet />
       </div>
     </div>

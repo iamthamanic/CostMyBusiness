@@ -170,7 +170,7 @@ Historical foundation (largely shipped):
 7. Persistence/auth.
 8. Performance/accessibility/security polish.
 
-**Next coding queue (corrective):** #36 pricing → #37 department tree → #38 inline calculators → #39 Halteverbotszone template V2 → #40 funnel-in-tree → #41 SCN-030 E2E. Then resume #16 / #18 / #19.
+**Next coding queue:** Core Product Calculator Workbench is the sole priority until DoD (see `.qa/design/core-product-calculator-workbench.md`). Do **not** pick #16 / #18 / #19 or other side features until the workbench sits.
 
 Locked delivery decisions for the coding queue (see `.qa/design/v1-mvp-delivery.md`):
 
