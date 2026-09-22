@@ -31,6 +31,12 @@ import {
   type ProductPlanningState,
   type Scenario,
 } from '../../scenarios/domain/planning'
+import type { CustomTemplateRepository } from '../../templates/application/custom-template-repository'
+import { domainModelToTemplateDefinition } from '../../templates/application/model-to-template'
+import {
+  DuplicateTemplateNameError,
+  type CustomTemplate,
+} from '../../templates/domain/custom-template'
 import { defaultPeriod, type PeriodType } from '@/core/periods'
 import { emptySnapshot, parseSnapshot, type LocalSnapshot } from './local-snapshot'
 
@@ -63,6 +69,7 @@ export type LocalRepositories = {
   products: ProductRepository
   funnels: FunnelRepository
   planning: PlanningRepository
+  customTemplates: CustomTemplateRepository
   /** Test helper: last load error message (German) when corrupt. */
   getLastLoadErrorDe(): string | null
   reset(): void
@@ -392,11 +399,56 @@ export function createLocalRepositories(storage?: StorageLike): LocalRepositorie
     },
   }
 
+  const customTemplates: CustomTemplateRepository = {
+    async list(workspaceId) {
+      return load().customTemplates.filter((t) => t.workspaceId === workspaceId)
+    },
+    async get(id) {
+      return load().customTemplates.find((t) => t.id === id) ?? null
+    },
+    async saveFromModel(input) {
+      const snapshot = load()
+      const name = input.name.trim()
+      if (!name) {
+        throw new Error('Bitte einen Vorlagennamen angeben.')
+      }
+      const collision = snapshot.customTemplates.some(
+        (t) => t.workspaceId === input.workspaceId && t.name.toLowerCase() === name.toLowerCase(),
+      )
+      if (collision) {
+        throw new DuplicateTemplateNameError(
+          `Eine Vorlage namens „${name}“ existiert bereits. Bitte einen anderen Namen wählen.`,
+        )
+      }
+      const id = newId('custom')
+      const definition = domainModelToTemplateDefinition(input.model, { id, name })
+      const ts = nowIso()
+      const template: CustomTemplate = {
+        id,
+        workspaceId: input.workspaceId,
+        name,
+        version: 1,
+        definition,
+        createdAt: ts,
+        updatedAt: ts,
+      }
+      snapshot.customTemplates.push(template)
+      save(snapshot)
+      return template
+    },
+    async delete(id) {
+      const snapshot = load()
+      snapshot.customTemplates = snapshot.customTemplates.filter((t) => t.id !== id)
+      save(snapshot)
+    },
+  }
+
   return {
     businesses,
     products,
     funnels,
     planning,
+    customTemplates,
     getLastLoadErrorDe: () => lastLoadErrorDe,
     reset: () => clearLocalStore(storage),
   }
