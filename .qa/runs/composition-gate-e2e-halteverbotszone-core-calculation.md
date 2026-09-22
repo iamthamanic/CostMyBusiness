@@ -1,6 +1,6 @@
 # Composition Gate — e2e-halteverbotszone-core-calculation
 
-- HEAD_SHA: WORKTREE
+- HEAD_SHA: f2aeda6d518096d1dd06fa7fd8ef46819de24fa6
 - Date: 2026-09-22
 - Verdict: SKIPPED
 
