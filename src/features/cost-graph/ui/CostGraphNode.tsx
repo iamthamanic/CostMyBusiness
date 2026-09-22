@@ -19,7 +19,9 @@ function CostGraphNodeComponent({ data, selected }: NodeProps & { data: FlowNode
   const isDept = data.viewType === 'department'
   const isResult = data.viewType === 'result'
   const showInline =
-    data.viewType === 'costCalculator' && data.expanded && data.onInputChange
+    (data.viewType === 'costCalculator' || data.viewType === 'funnel') &&
+    data.expanded &&
+    data.onInputChange
 
   return (
     <div
