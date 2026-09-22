@@ -13,6 +13,13 @@ import type { BusinessRepository } from '../application/business-repository'
 import type { Business, CreateBusinessInput, UpdateBusinessInput } from '../domain/business'
 import type { ProductRepository } from '../../products/application/product-repository'
 import type { CreateProductInput, Product, UpdateProductInput } from '../../products/domain/product'
+import type { FunnelRepository } from '../../funnels/application/funnel-repository'
+import {
+  defaultMarketingStages,
+  type CreateMarketingFunnelInput,
+  type MarketingFunnel,
+  type UpdateMarketingFunnelInput,
+} from '../../funnels/domain/marketing-funnel'
 import { emptySnapshot, parseSnapshot, type LocalSnapshot } from './local-snapshot'
 
 export class LocalStoreCorruptError extends Error {
@@ -42,6 +49,7 @@ function newId(prefix: string): string {
 export type LocalRepositories = {
   businesses: BusinessRepository
   products: ProductRepository
+  funnels: FunnelRepository
   /** Test helper: last load error message (German) when corrupt. */
   getLastLoadErrorDe(): string | null
   reset(): void
@@ -111,7 +119,11 @@ export function createLocalRepositories(storage?: StorageLike): LocalRepositorie
     async delete(id) {
       const snapshot = load()
       snapshot.businesses = snapshot.businesses.filter((b) => b.id !== id)
+      const removedProductIds = new Set(
+        snapshot.products.filter((p) => p.businessId === id).map((p) => p.id),
+      )
       snapshot.products = snapshot.products.filter((p) => p.businessId !== id)
+      snapshot.funnels = snapshot.funnels.filter((f) => !removedProductIds.has(f.productId))
       save(snapshot)
     },
   }
@@ -171,6 +183,66 @@ export function createLocalRepositories(storage?: StorageLike): LocalRepositorie
     async delete(id) {
       const snapshot = load()
       snapshot.products = snapshot.products.filter((p) => p.id !== id)
+      snapshot.funnels = snapshot.funnels.filter((f) => f.productId !== id)
+      save(snapshot)
+    },
+  }
+
+  const funnels: FunnelRepository = {
+    async listByProduct(productId) {
+      return load().funnels.filter((f) => f.productId === productId)
+    },
+    async get(id) {
+      return load().funnels.find((f) => f.id === id) ?? null
+    },
+    async createMarketing(input: CreateMarketingFunnelInput) {
+      const snapshot = load()
+      const product = snapshot.products.find((p) => p.id === input.productId)
+      if (!product) throw new NotFoundError('Product', input.productId)
+      const ts = nowIso()
+      const funnel: MarketingFunnel = {
+        id: newId('fnl'),
+        productId: input.productId,
+        type: 'marketing',
+        name: input.name,
+        stages: input.stages ?? defaultMarketingStages(),
+        costs: {
+          mediaSpend: input.costs?.mediaSpend ?? 0,
+          agency: input.costs?.agency ?? 0,
+          personnel: input.costs?.personnel ?? 0,
+          tools: input.costs?.tools ?? 0,
+        },
+        createdAt: ts,
+        updatedAt: ts,
+      }
+      snapshot.funnels.push(funnel)
+      save(snapshot)
+      return funnel
+    },
+    async update(id, input: UpdateMarketingFunnelInput) {
+      const snapshot = load()
+      const index = snapshot.funnels.findIndex((f) => f.id === id)
+      if (index < 0) throw new NotFoundError('Funnel', id)
+      const current = snapshot.funnels[index]!
+      const updated: MarketingFunnel = {
+        ...current,
+        name: input.name ?? current.name,
+        stages: input.stages ?? current.stages,
+        costs: {
+          mediaSpend: input.costs?.mediaSpend ?? current.costs.mediaSpend,
+          agency: input.costs?.agency ?? current.costs.agency,
+          personnel: input.costs?.personnel ?? current.costs.personnel,
+          tools: input.costs?.tools ?? current.costs.tools,
+        },
+        updatedAt: nowIso(),
+      }
+      snapshot.funnels[index] = updated
+      save(snapshot)
+      return updated
+    },
+    async delete(id) {
+      const snapshot = load()
+      snapshot.funnels = snapshot.funnels.filter((f) => f.id !== id)
       save(snapshot)
     },
   }
@@ -178,6 +250,7 @@ export function createLocalRepositories(storage?: StorageLike): LocalRepositorie
   return {
     businesses,
     products,
+    funnels,
     getLastLoadErrorDe: () => lastLoadErrorDe,
     reset: () => clearLocalStore(storage),
   }

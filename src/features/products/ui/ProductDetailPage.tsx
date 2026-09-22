@@ -13,6 +13,7 @@ import {
   UnknownTemplateError,
   UnsupportedTemplateVersionError,
 } from '@/features/templates'
+import { MarketingFunnelsPanel } from '@/features/funnels'
 
 export function ProductDetailPage() {
   const { productId } = useParams()
@@ -93,6 +94,7 @@ export function ProductDetailPage() {
         onModelChange={setModel}
         templateId={resolveTemplateId(product)}
       />
+      <MarketingFunnelsPanel productId={product.id} />
     </section>
   )
 }
