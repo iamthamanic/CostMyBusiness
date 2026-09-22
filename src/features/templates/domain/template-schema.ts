@@ -63,6 +63,8 @@ export const ShippedTemplateSchema = z.object({
   id: z.string().min(1),
   version: z.number().int().positive(),
   industry: z.string().min(1),
+  /** Optional product-type specialization within an industry (e.g. halteverbotszone). */
+  productType: z.string().min(1).optional(),
   labelDe: z.string().min(1),
   descriptionDe: z.string().min(1),
   defaultVolume: z.number().finite().positive().default(100),

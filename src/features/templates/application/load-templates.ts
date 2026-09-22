@@ -7,6 +7,7 @@ import ecommerceJson from '@/data/default-templates/ecommerce.v1.json'
 import saasJson from '@/data/default-templates/saas.v1.json'
 import serviceJson from '@/data/default-templates/service.v1.json'
 import trafficSafetyJson from '@/data/default-templates/traffic-safety.v1.json'
+import halteverbotszoneJson from '@/data/default-templates/traffic-safety-halteverbotszone.v1.json'
 import {
   ShippedTemplateSchema,
   UnknownTemplateError,
@@ -22,6 +23,7 @@ const RAW_TEMPLATES: unknown[] = [
   ecommerceJson,
   serviceJson,
   trafficSafetyJson,
+  halteverbotszoneJson,
   customJson,
 ]
 

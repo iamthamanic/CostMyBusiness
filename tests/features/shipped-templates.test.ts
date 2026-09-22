@@ -27,10 +27,17 @@ function productFixture(overrides: Partial<Product> = {}): Product {
 }
 
 describe('shipped templates', () => {
-  it('ships five industry templates validated by Zod', () => {
+  it('ships industry + product-type templates validated by Zod', () => {
     const list = listShippedTemplates()
     expect(list.map((t) => t.id).sort()).toEqual(
-      ['custom', 'ecommerce', 'saas', 'service', 'traffic-safety'].sort(),
+      [
+        'custom',
+        'ecommerce',
+        'saas',
+        'service',
+        'traffic-safety',
+        'traffic-safety-halteverbotszone',
+      ].sort(),
     )
     for (const t of list) {
       expect(t.version).toBe(1)

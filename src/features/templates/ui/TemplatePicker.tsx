@@ -106,6 +106,15 @@ export function TemplatePicker({ value, onChange, customTemplates = [] }: Props)
               }`}
             >
               <span className="block font-medium">{t.labelDe}</span>
+              {t.productType ? (
+                <span className="mt-0.5 block text-[10px] uppercase tracking-wide text-[color:var(--accent-analysis)]">
+                  {t.industry} · {t.productType}
+                </span>
+              ) : (
+                <span className="mt-0.5 block text-[10px] uppercase tracking-wide text-[color:var(--ink-muted)]">
+                  {t.industry}
+                </span>
+              )}
               <span className="mt-1 block text-xs text-[color:var(--ink-muted)]">{t.descriptionDe}</span>
             </button>
           )
