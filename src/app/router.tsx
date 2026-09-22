@@ -11,6 +11,7 @@ import { BusinessesPage } from '@/features/businesses/ui/BusinessesPage'
 import { GlossaryPage } from '@/features/glossary'
 import { ProductDetailPage } from '@/features/products/ui/ProductDetailPage'
 import { ProductsPage } from '@/features/products/ui/ProductsPage'
+import { TemplatesPage } from '@/features/templates'
 
 export function AppRouter() {
   return (
@@ -24,7 +25,7 @@ export function AppRouter() {
             <Route path="products" element={<ProductsPage />} />
             <Route path="products/:productId" element={<ProductDetailPage />} />
             <Route path="scenarios" element={<StubPage title="Szenarien" />} />
-            <Route path="templates" element={<StubPage title="Vorlagen" />} />
+            <Route path="templates" element={<TemplatesPage />} />
             <Route path="glossary" element={<GlossaryPage />} />
             <Route path="settings" element={<StubPage title="Einstellungen" />} />
             <Route path="*" element={<Navigate to="/" replace />} />

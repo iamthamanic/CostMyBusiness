@@ -139,6 +139,9 @@ export function createLocalRepositories(storage?: StorageLike): LocalRepositorie
         name: input.name,
         currency: input.currency ?? business.defaultCurrency ?? DEFAULT_CURRENCY,
         price: input.price,
+        templateId: input.templateId ?? 'custom',
+        templateVersion: input.templateVersion,
+        includedOptionalKeys: input.includedOptionalKeys,
         createdAt: ts,
         updatedAt: ts,
       }
@@ -156,6 +159,9 @@ export function createLocalRepositories(storage?: StorageLike): LocalRepositorie
         name: input.name ?? current.name,
         currency: input.currency ?? current.currency,
         price: input.price ?? current.price,
+        templateId: input.templateId ?? current.templateId,
+        templateVersion: input.templateVersion ?? current.templateVersion,
+        includedOptionalKeys: input.includedOptionalKeys ?? current.includedOptionalKeys,
         updatedAt: nowIso(),
       }
       snapshot.products[index] = updated
