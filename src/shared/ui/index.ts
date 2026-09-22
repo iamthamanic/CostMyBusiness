@@ -1,5 +1,6 @@
 /**
- * Shared UI barrel — presentation primitives only.
+ * Shared UI barrel.
  * Location: src/shared/ui/index.ts
  */
-export {}
+export { Button } from './Button'
+export { Field } from './Field'

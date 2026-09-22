@@ -3,9 +3,10 @@ import { describe, expect, it } from 'vitest'
 import { App } from '@/app/App'
 
 describe('App shell', () => {
-  it('renders German placeholder branding', () => {
+  it('renders German overview branding and nav', () => {
     render(<App />)
-    expect(screen.getByText('CostMyBusiness')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Profitabilitäts-Workbench' })).toBeInTheDocument()
+    expect(screen.getAllByText('CostMyBusiness').length).toBeGreaterThan(0)
+    expect(screen.getByRole('heading', { name: 'Übersicht' })).toBeInTheDocument()
+    expect(screen.getByRole('navigation', { name: 'Hauptnavigation' })).toBeInTheDocument()
   })
 })
