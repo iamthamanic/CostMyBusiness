@@ -8,6 +8,7 @@ import { OverviewPage } from '@/app/pages/OverviewPage'
 import { StubPage } from '@/app/pages/StubPage'
 import { ReposProvider } from '@/app/providers/ReposProvider'
 import { BusinessesPage } from '@/features/businesses/ui/BusinessesPage'
+import { GlossaryPage } from '@/features/glossary'
 import { ProductDetailPage } from '@/features/products/ui/ProductDetailPage'
 import { ProductsPage } from '@/features/products/ui/ProductsPage'
 
@@ -24,7 +25,7 @@ export function AppRouter() {
             <Route path="products/:productId" element={<ProductDetailPage />} />
             <Route path="scenarios" element={<StubPage title="Szenarien" />} />
             <Route path="templates" element={<StubPage title="Vorlagen" />} />
-            <Route path="glossary" element={<StubPage title="Glossar" />} />
+            <Route path="glossary" element={<GlossaryPage />} />
             <Route path="settings" element={<StubPage title="Einstellungen" />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>

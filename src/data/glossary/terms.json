@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "terms": [
+    {
+      "id": "ctr",
+      "term": "CTR",
+      "fullName": "Click-Through-Rate",
+      "shortDefinition": "Anteil der Klicks an den Impressionen.",
+      "definition": "Die Click-Through-Rate beschreibt, wie oft eine Anzeige oder ein Link im Verhältnis zu den Impressionen angeklickt wird.",
+      "formulaDescription": "Klicks / Impressionen",
+      "example": "100 Klicks bei 5.000 Impressionen → CTR = 2 %",
+      "category": "acquisition",
+      "related": ["cpc", "cvr"]
+    },
+    {
+      "id": "cpc",
+      "term": "CPC",
+      "fullName": "Cost per Click",
+      "shortDefinition": "Kosten pro Klick.",
+      "definition": "Der Cost per Click ist der durchschnittliche Preis, den Sie für einen Klick zahlen.",
+      "formulaDescription": "Media-Spend / Klicks",
+      "example": "500 EUR Spend bei 250 Klicks → CPC = 2 EUR",
+      "category": "acquisition",
+      "related": ["ctr", "cpa", "cac"]
+    },
+    {
+      "id": "cvr",
+      "term": "CVR",
+      "fullName": "Conversion Rate",
+      "shortDefinition": "Anteil der Conversions an den Klicks oder Visits.",
+      "definition": "Die Conversion Rate misst, wie viele Besucher oder Klicks zu einer gewünschten Aktion werden.",
+      "formulaDescription": "Conversions / Klicks",
+      "example": "20 Käufe bei 400 Klicks → CVR = 5 %",
+      "category": "acquisition",
+      "related": ["ctr", "cpa"]
+    },
+    {
+      "id": "cpa",
+      "term": "CPA",
+      "fullName": "Cost per Acquisition",
+      "shortDefinition": "Kosten pro Conversion/Acquisition.",
+      "definition": "CPA zeigt, was eine Conversion im Schnitt kostet — oft media-only oder voll belastet.",
+      "formulaDescription": "Akquisitionskosten / Conversions",
+      "example": "1.000 EUR Kosten bei 50 Käufen → CPA = 20 EUR",
+      "category": "acquisition",
+      "related": ["cac", "cpc"]
+    },
+    {
+      "id": "cac",
+      "term": "CAC",
+      "fullName": "Customer Acquisition Cost",
+      "shortDefinition": "Kosten, um einen Kunden zu gewinnen.",
+      "definition": "CAC umfasst typischerweise Media und oft auch Personal/Agentur/Tools für die Kundengewinnung.",
+      "formulaDescription": "Akquisitionskosten / neue Kunden",
+      "example": "3.000 EUR voll belastete Kosten / 30 Kunden → CAC = 100 EUR",
+      "category": "acquisition",
+      "related": ["cpa", "ltv"]
+    },
+    {
+      "id": "cogs",
+      "term": "COGS",
+      "fullName": "Cost of Goods Sold",
+      "shortDefinition": "Direkte Herstell- oder Beschaffungskosten.",
+      "definition": "COGS sind die direkt dem Produkt zurechenbaren Kosten der erbrachten Leistung oder Ware.",
+      "formulaDescription": "Summe direkter Produktkosten",
+      "example": "Material 8 EUR + Versand 2 EUR → COGS = 10 EUR / Stück",
+      "category": "operations",
+      "related": ["contribution", "margin"]
+    },
+    {
+      "id": "ltv",
+      "term": "LTV",
+      "fullName": "Lifetime Value",
+      "shortDefinition": "Erwarteter Gesamtertrag eines Kunden.",
+      "definition": "LTV schätzt den wirtschaftlichen Wert eines Kunden über die gesamte Beziehung.",
+      "formulaDescription": "Deckungsbeitrag je Periode × erwartete Perioden",
+      "example": "30 EUR DB/Monat × 12 Monate → LTV = 360 EUR",
+      "category": "economics",
+      "related": ["cac", "contribution"]
+    },
+    {
+      "id": "contribution",
+      "term": "Deckungsbeitrag",
+      "fullName": "Contribution",
+      "shortDefinition": "Umsatz abzüglich direkter Kosten.",
+      "definition": "Der Deckungsbeitrag zeigt, was nach direkten Kosten zur Deckung von Overhead und Gewinn bleibt.",
+      "formulaDescription": "Umsatz − direkte Kosten",
+      "example": "Preis 50 EUR − direkte Kosten 20 EUR → DB = 30 EUR / Stück",
+      "category": "economics",
+      "related": ["margin", "cogs", "allocation"]
+    },
+    {
+      "id": "allocation",
+      "term": "Allokation",
+      "fullName": "Cost Allocation",
+      "shortDefinition": "Verteilung gemeinsamer Kosten auf Produkte.",
+      "definition": "Allokation verteilt geteilte Kostenpools nach Regeln (z. B. pro Stück, FTE oder Prozent) und muss als allokiert erkennbar bleiben.",
+      "formulaDescription": "Poolbetrag × Allokationsschlüssel",
+      "example": "HR-Pool 10.000 EUR auf 5 FTE → 2.000 EUR je FTE",
+      "category": "overhead",
+      "related": ["contribution", "margin"]
+    },
+    {
+      "id": "margin",
+      "term": "Marge",
+      "fullName": "Margin",
+      "shortDefinition": "Relativer Anteil des Ergebnisses am Umsatz.",
+      "definition": "Die Marge drückt den Deckungsbeitrag oder Gewinn relativ zum Umsatz aus.",
+      "formulaDescription": "Deckungsbeitrag / Umsatz",
+      "example": "DB 30 EUR bei Preis 50 EUR → Marge = 60 %",
+      "category": "economics",
+      "related": ["contribution", "cogs"]
+    }
+  ]
+}

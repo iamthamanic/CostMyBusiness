@@ -15,6 +15,7 @@ import {
 import '@xyflow/react/dist/style.css'
 import { evaluate } from '@/core/calculation'
 import type { DomainModel } from '@/core/model'
+import { GlossaryHelp } from '@/features/glossary'
 import { Button } from '@/shared/ui'
 import { layoutWithElk } from '../application/layout-with-elk'
 import { mapDomainToFlow, type FlowNodeData } from '../application/map-domain-to-flow'
@@ -75,6 +76,7 @@ function WorkbenchInner({ model, onModelChange }: Props) {
         <div className="grid flex-1 gap-3 rounded-[12px] border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] p-4 sm:grid-cols-3">
           <Kpi
             label="Umsatz"
+            termId="contribution"
             value={
               revenue?.value.status === 'ok'
                 ? `${revenue.value.periodTotal.toFixed(2)}`
@@ -84,6 +86,7 @@ function WorkbenchInner({ model, onModelChange }: Props) {
           <Kpi label="Kosten (aktiv)" value={costPeriod.toFixed(2)} />
           <Kpi
             label="Deckungsbeitrag"
+            termId="contribution"
             value={
               contribution?.value.status === 'ok'
                 ? `${contribution.value.periodTotal.toFixed(2)}`
@@ -147,10 +150,21 @@ function WorkbenchInner({ model, onModelChange }: Props) {
   )
 }
 
-function Kpi({ label, value }: { label: string; value: string }) {
+function Kpi({
+  label,
+  value,
+  termId,
+}: {
+  label: string
+  value: string
+  termId?: string
+}) {
   return (
     <div>
-      <p className="text-xs uppercase tracking-wide text-[color:var(--ink-muted)]">{label}</p>
+      <p className="flex items-center text-xs uppercase tracking-wide text-[color:var(--ink-muted)]">
+        {label}
+        {termId ? <GlossaryHelp termId={termId} /> : null}
+      </p>
       <p className="font-variant-numeric text-xl font-semibold tabular-nums">{value}</p>
     </div>
   )
