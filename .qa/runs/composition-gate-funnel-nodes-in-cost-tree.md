@@ -1,6 +1,6 @@
 # Composition Gate — funnel-nodes-in-cost-tree
 
-- HEAD_SHA: WORKTREE
+- HEAD_SHA: e9c854b2a2c3fd3bf8f4176ca2849f722cfc299b
 - Date: 2026-09-22
 - Verdict: SKIPPED
 
