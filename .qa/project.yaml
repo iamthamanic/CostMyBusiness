@@ -53,4 +53,11 @@ viewports:
     width: 1280
     height: 720
 
-navigation: []
+navigation:
+  - Übersicht
+  - Unternehmen
+  - Produkte
+  - Szenarien
+  - Vorlagen
+  - Glossar
+  - Einstellungen

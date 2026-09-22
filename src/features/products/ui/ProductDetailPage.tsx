@@ -1,10 +1,11 @@
 /**
- * Product detail placeholder until cost-graph workbench ships.
+ * Product detail with cost-graph workbench.
  * Location: src/features/products/ui/ProductDetailPage.tsx
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useRepos } from '@/app/providers/ReposProvider'
+import { buildProductModel, CostGraphWorkbench } from '@/features/cost-graph'
 import type { Product } from '@/features/products'
 
 export function ProductDetailPage() {
@@ -25,8 +26,10 @@ export function ProductDetailPage() {
     })()
   }, [productId])
 
+  const model = useMemo(() => (product ? buildProductModel(product) : null), [product])
+
   if (state === 'loading') return <p aria-busy="true">Lädt…</p>
-  if (state === 'missing' || !product) {
+  if (state === 'missing' || !product || !model) {
     return (
       <section>
         <p role="alert">Produkt nicht gefunden.</p>
@@ -38,16 +41,17 @@ export function ProductDetailPage() {
   }
 
   return (
-    <section className="flex flex-col gap-4 rounded-[12px] border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] p-6">
-      <p className="text-sm text-[color:var(--ink-muted)]">Produkt-Workbench</p>
-      <h1 className="text-2xl font-semibold">{product.name}</h1>
-      <p className="text-[color:var(--ink-muted)]">
-        Preis {product.price ?? 0} {product.currency} / Stück. Der Kostengraph folgt in der nächsten
-        Ausbaustufe.
-      </p>
-      <Link to="/products" className="text-sm text-[color:var(--accent-analysis)]">
-        Zurück zur Produktliste
-      </Link>
+    <section className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-sm text-[color:var(--ink-muted)]">Produkt-Workbench</p>
+          <h1 className="text-2xl font-semibold">{product.name}</h1>
+        </div>
+        <Link to="/products" className="text-sm text-[color:var(--accent-analysis)]">
+          Zurück zur Produktliste
+        </Link>
+      </div>
+      <CostGraphWorkbench model={model} />
     </section>
   )
 }
