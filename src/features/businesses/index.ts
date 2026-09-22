@@ -12,3 +12,4 @@ export {
   type LocalRepositories,
 } from './persistence/local-business-product-repository'
 export { emptySnapshot, parseSnapshot, LocalSnapshotSchema, type LocalSnapshot } from './persistence/local-snapshot'
+export { BusinessesPage } from './ui/BusinessesPage'

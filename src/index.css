@@ -6,6 +6,10 @@
   --ink-primary: #172033;
   --ink-muted: #657087;
   --accent-analysis: #3559c7;
+  --semantic-cost: #b4493f;
+  --semantic-profit: #16705a;
+  --semantic-warning: #9a6812;
+  --line-default: #d9dee7;
   --focus-ring: #1e5eff;
 }
 
