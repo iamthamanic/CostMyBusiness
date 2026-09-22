@@ -8,3 +8,8 @@ dist/
 playwright-report/
 test-results/
 .DS_Store
+dist-ssr/
+*.local
+coverage/
+*.tsbuildinfo
+.qa/queue/state.json
