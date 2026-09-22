@@ -106,13 +106,45 @@ function computeLeaf(node: DomainNode, volume: number): CalcValue {
       const perUnit = volume === 0 ? 0 : amount / volume
       return { status: 'ok', perUnit, periodTotal: amount }
     }
+    if (behavior === 'per_hour') {
+      const rate = node.inputs.rate
+      if (rate === undefined) {
+        return unresolved('missing_input', 'Stundensatz (rate) fehlt')
+      }
+      let hoursPerOrder: number | undefined
+      if (node.inputs.hoursPerStop !== undefined && node.inputs.stopsPerOrder !== undefined) {
+        hoursPerOrder = node.inputs.hoursPerStop * node.inputs.stopsPerOrder
+      } else {
+        hoursPerOrder = node.inputs.hoursPerOrder
+      }
+      if (hoursPerOrder === undefined) {
+        return unresolved(
+          'missing_input',
+          'Stunden/Auftrag oder Stunden/Stopp × Stopps/Auftrag erforderlich',
+        )
+      }
+      const perUnit = rate * hoursPerOrder
+      return { status: 'ok', perUnit, periodTotal: perUnit * volume }
+    }
+    if (
+      behavior === 'per_km' ||
+      behavior === 'per_stop'
+    ) {
+      const rate = node.inputs.rate
+      if (rate === undefined) return unresolved('missing_input', 'Unit cost requires rate')
+      const quantity = node.inputs.quantity
+      if (quantity === undefined) {
+        // rate alone = per-unit driver already applied externally
+        return { status: 'ok', perUnit: rate, periodTotal: rate * volume }
+      }
+      const perUnit = rate * quantity
+      return { status: 'ok', perUnit, periodTotal: perUnit * volume }
+    }
     if (
       behavior === 'per_unit' ||
       behavior === 'per_order' ||
       behavior === 'per_customer' ||
       behavior === 'per_employee' ||
-      behavior === 'per_km' ||
-      behavior === 'per_stop' ||
       behavior === 'per_transaction' ||
       behavior === 'per_click' ||
       behavior === 'per_api_call'
@@ -120,15 +152,6 @@ function computeLeaf(node: DomainNode, volume: number): CalcValue {
       const rate = node.inputs.rate
       if (rate === undefined) return unresolved('missing_input', 'Unit cost requires rate')
       return { status: 'ok', perUnit: rate, periodTotal: rate * volume }
-    }
-    if (behavior === 'per_hour') {
-      const rate = node.inputs.rate
-      const hoursPerOrder = node.inputs.hoursPerOrder
-      if (rate === undefined || hoursPerOrder === undefined) {
-        return unresolved('missing_input', 'Hourly cost requires rate and hoursPerOrder')
-      }
-      const perUnit = rate * hoursPerOrder
-      return { status: 'ok', perUnit, periodTotal: perUnit * volume }
     }
     if (behavior === 'percentage_revenue') {
       const percentage = node.inputs.percentage

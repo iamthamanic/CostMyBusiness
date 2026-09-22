@@ -3,7 +3,8 @@
  * Location: src/features/cost-graph/application/map-domain-to-flow.ts
  */
 import type { Edge, Node } from '@xyflow/react'
-import type { DomainModel, EvaluationResult, NodeId } from '@/core/model'
+import type { CostBehavior, DomainModel, EvaluationResult, NodeId } from '@/core/model'
+import { formatDerivation, inputSchemaFor } from './input-schemas'
 import { resolveViewType, type CostGraphViewType } from './view-node-type'
 
 export type FlowNodeData = {
@@ -13,17 +14,26 @@ export type FlowNodeData = {
   viewType: CostGraphViewType
   displayValue: string
   unresolved: boolean
+  unresolvedMessage?: string
   allocationRule: string
   childCount: number
   collapsed: boolean
   emptyDepartment: boolean
+  expanded: boolean
+  costBehavior?: CostBehavior
+  inputs: Record<string, number>
+  derivationDe: string
+  schemaFields: ReturnType<typeof inputSchemaFor>['fields']
+  onToggleExpand?: () => void
+  onInputChange?: (fieldId: string, value: number) => void
 }
 
 export type MapDomainToFlowOptions = {
-  /** Collapsed department (group) node ids — children omitted from view. */
   collapsedDepartmentIds?: Set<string>
-  /** contribution = direct costs only in KPI path; fullyLoaded includes allocated. */
   costView?: 'contribution' | 'fullyLoaded'
+  expandedNodeIds?: Set<string>
+  onToggleExpand?: (nodeId: string) => void
+  onInputChange?: (nodeId: string, fieldId: string, value: number) => void
 }
 
 function isAllocatedCost(
@@ -43,6 +53,7 @@ export function mapDomainToFlow(
   options: MapDomainToFlowOptions = {},
 ): { nodes: Node<FlowNodeData>[]; edges: Edge[] } {
   const collapsed = options.collapsedDepartmentIds ?? new Set<string>()
+  const expanded = options.expandedNodeIds ?? new Set<string>()
   const costView = options.costView ?? 'contribution'
 
   const childrenByParent = new Map<string, string[]>()
@@ -75,14 +86,14 @@ export function mapDomainToFlow(
     const viewType = resolveViewType(node)
     let displayValue = '—'
     let unresolved = false
+    let unresolvedMessage: string | undefined
     if (!result || result.value.status === 'unresolved') {
       unresolved = true
-      displayValue =
-        result?.value.status === 'unresolved'
-          ? result.value.message || 'Unvollständig'
-          : '—'
+      unresolvedMessage =
+        result?.value.status === 'unresolved' ? result.value.message : 'Unvollständig'
+      displayValue = 'Unvollständig'
     } else {
-      displayValue = `${result.value.perUnit.toFixed(2)} / Einh.`
+      displayValue = `${result.value.perUnit.toFixed(2)} EUR / Einh.`
     }
 
     const childIds = childrenByParent.get(node.id) ?? []
@@ -91,6 +102,8 @@ export function mapDomainToFlow(
       return child?.enabled !== false
     })
     const emptyDepartment = viewType === 'department' && enabledChildren.length === 0
+    const isExpanded = expanded.has(node.id)
+    const schema = inputSchemaFor(node.costBehavior)
 
     return {
       id: node.id,
@@ -103,10 +116,24 @@ export function mapDomainToFlow(
         viewType,
         displayValue,
         unresolved,
+        unresolvedMessage,
         allocationRule: result?.provenance.allocationRule ?? 'none',
         childCount: enabledChildren.length,
         collapsed: collapsed.has(node.id),
         emptyDepartment,
+        expanded: isExpanded,
+        costBehavior: node.costBehavior,
+        inputs: { ...node.inputs },
+        derivationDe: formatDerivation(node.costBehavior, node.inputs),
+        schemaFields: schema.fields,
+        onToggleExpand:
+          viewType === 'costCalculator' || viewType === 'productPrice' || viewType === 'revenue'
+            ? () => options.onToggleExpand?.(node.id)
+            : undefined,
+        onInputChange:
+          viewType === 'costCalculator'
+            ? (fieldId, value) => options.onInputChange?.(node.id, fieldId, value)
+            : undefined,
       },
     }
   })
