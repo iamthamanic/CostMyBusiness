@@ -22,11 +22,15 @@ export async function layoutWithElk(
       'elk.layered.spacing.nodeNodeBetweenLayers': '56',
     },
     children: nodes.map((node) => {
-      const size = elkSizeForViewType(node.data.viewType, node.data.collapsed)
+      const base = elkSizeForViewType(node.data.viewType, node.data.collapsed)
+      const height =
+        node.data.expanded && node.data.viewType === 'costCalculator'
+          ? Math.max(base.height, 56 + node.data.schemaFields.length * 52 + 48)
+          : base.height
       return {
         id: node.id,
-        width: size.width,
-        height: size.height,
+        width: node.data.expanded ? Math.max(base.width, 260) : base.width,
+        height,
       }
     }),
     edges: edges.map((edge) => ({

@@ -20,7 +20,7 @@ import { Button, Field } from '@/shared/ui'
 import { layoutWithElk } from '../application/layout-with-elk'
 import { mapDomainToFlow, type FlowNodeData } from '../application/map-domain-to-flow'
 import { resolveViewType } from '../application/view-node-type'
-import { addCostNode } from '../application/mutate-model'
+import { addCostNode, updateNodeInputs } from '../application/mutate-model'
 import { CostGraphNode } from './CostGraphNode'
 import { HierarchyList } from './HierarchyList'
 import { InspectorPanel } from './InspectorPanel'
@@ -45,14 +45,27 @@ function WorkbenchInner({ model, onModelChange, templateId }: Props) {
   const [costView, setCostView] = useState<CostView>('contribution')
   const [search, setSearch] = useState('')
   const [collapsedDepartments, setCollapsedDepartments] = useState<Set<string>>(() => new Set())
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(() => new Set())
 
   const mapped = useMemo(
     () =>
       mapDomainToFlow(model, evaluation, {
         collapsedDepartmentIds: collapsedDepartments,
         costView,
+        expandedNodeIds: expandedNodes,
+        onToggleExpand: (nodeId) => {
+          setExpandedNodes((prev) => {
+            const next = new Set(prev)
+            if (next.has(nodeId)) next.delete(nodeId)
+            else next.add(nodeId)
+            return next
+          })
+        },
+        onInputChange: (nodeId, fieldId, value) => {
+          onModelChange(updateNodeInputs(model, nodeId, { [fieldId]: value }))
+        },
       }),
-    [model, evaluation, collapsedDepartments, costView],
+    [model, evaluation, collapsedDepartments, costView, expandedNodes, onModelChange],
   )
 
   const filteredMapped = useMemo(() => {
