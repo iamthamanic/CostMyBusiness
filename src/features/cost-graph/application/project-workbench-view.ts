@@ -23,6 +23,8 @@ export type WorkbenchCostRow = {
   derivationDe: string
   allocationRule: 'direct' | 'allocated' | 'none' | 'mixed'
   isFunnel: boolean
+  enabled: boolean
+  canRemove: boolean
   costBehavior?: DomainNode['costBehavior']
   inputs: Record<string, number>
   schemaFields: ReturnType<typeof inputSchemaFor>['fields']
@@ -75,7 +77,6 @@ function childrenOf(model: DomainModel, parentId: NodeId): DomainNode[] {
   return model.nodes.filter(
     (n) =>
       n.parentId === parentId &&
-      n.enabled !== false &&
       (n.kind === 'cost' || n.kind === 'driver'),
   )
 }
@@ -96,6 +97,7 @@ export function projectWorkbenchView(
   let allocatedOk = true
   for (const node of model.nodes) {
     if (node.kind !== 'cost') continue
+    if (node.enabled === false) continue
     const r = evaluation.results[node.id]
     if (!r || r.value.status !== 'ok') {
       if (node.allocation?.rule === 'allocated') allocatedOk = false
@@ -121,18 +123,26 @@ export function projectWorkbenchView(
     const childNodes = childrenOf(model, group.id)
     const rows: WorkbenchCostRow[] = childNodes.map((n) => {
       const result = evaluation.results[n.id]
-      const unresolved = !result || result.value.status === 'unresolved'
+      const enabled = n.enabled !== false
+      const unresolved = enabled && (!result || result.value.status === 'unresolved')
       return {
         nodeId: n.id,
         key: n.key,
         label: n.label,
-        perUnit: result?.value.status === 'ok' ? result.value.perUnit : null,
+        perUnit:
+          !enabled
+            ? 0
+            : result?.value.status === 'ok'
+              ? result.value.perUnit
+              : null,
         unresolved,
         unresolvedMessage:
           result?.value.status === 'unresolved' ? result.value.message : undefined,
         derivationDe: formatDerivation(n.costBehavior, n.inputs),
         allocationRule: result?.provenance.allocationRule ?? 'none',
         isFunnel: isFunnelDomainNode(n),
+        enabled,
+        canRemove: n.kind === 'cost',
         costBehavior: n.costBehavior,
         inputs: { ...n.inputs },
         schemaFields: inputSchemaFor(n.costBehavior).fields,

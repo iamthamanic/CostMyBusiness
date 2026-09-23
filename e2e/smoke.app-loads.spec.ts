@@ -19,8 +19,8 @@ test('app loads and shows German navigation', async ({ page }) => {
   await page.goto('/')
   const nav = page.getByRole('navigation', { name: 'Hauptnavigation' })
   await expect(nav).toBeVisible()
-  await expect(nav.getByRole('link', { name: 'Unternehmen', exact: true })).toBeVisible()
-  await expect(nav.getByRole('link', { name: 'Produkte', exact: true })).toBeVisible()
+  await expect(nav.getByRole('link', { name: 'Kalkulator', exact: true })).toBeVisible()
+  await expect(page.getByTestId('product-tabs')).toBeVisible()
 
   await page.screenshot({
     path: path.join(EVIDENCE_DIR, '01-app-loads.png'),

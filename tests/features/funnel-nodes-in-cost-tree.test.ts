@@ -29,6 +29,7 @@ describe('funnel nodes in cost tree', () => {
     id: 'fnl_1',
     productId: 'prd_1',
     type: 'marketing',
+    enabled: true,
     name: 'Google Generic',
     stages: [
       { key: 'impressions', labelDe: 'Impressions', order: 0, count: 10000 },
@@ -36,6 +37,7 @@ describe('funnel nodes in cost tree', () => {
       { key: 'conversions', labelDe: 'Conversions', order: 2, count: 50 },
     ],
     costs: { mediaSpend: 1000, agency: 100, personnel: 200, tools: 50 },
+    campaigns: [],
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
   }

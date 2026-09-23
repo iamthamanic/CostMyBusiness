@@ -5,6 +5,7 @@
 import type {
   CreateMarketingFunnelInput,
   FunnelStage,
+  MarketingCampaign,
   MarketingFunnel,
   MarketingOperatingCosts,
 } from '../domain/marketing-funnel'
@@ -20,6 +21,8 @@ export type UpdateFunnelInput = {
   stages?: FunnelStage[]
   marketingCosts?: Partial<MarketingOperatingCosts>
   salesCosts?: Partial<SalesOperatingCosts>
+  enabled?: boolean
+  campaigns?: MarketingCampaign[]
 }
 
 export type FunnelRepository = {

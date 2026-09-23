@@ -4,6 +4,7 @@
  */
 export {
   calculateMarketingMetrics,
+  blendCampaignCpa,
   type FunnelMetricValue,
   type MarketingFunnelMetrics,
 } from './application/calculate-marketing-metrics'
@@ -16,9 +17,12 @@ export {
 export type { FunnelRepository, UpdateFunnelInput } from './application/funnel-repository'
 export {
   MarketingFunnelSchema,
+  MarketingCampaignSchema,
   defaultMarketingStages,
+  createEmptyCampaign,
   type CreateMarketingFunnelInput,
   type FunnelStage,
+  type MarketingCampaign,
   type MarketingFunnel,
   type UpdateMarketingFunnelInput,
 } from './domain/marketing-funnel'

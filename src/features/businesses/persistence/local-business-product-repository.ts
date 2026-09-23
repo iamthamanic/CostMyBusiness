@@ -257,6 +257,7 @@ export function createLocalRepositories(storage?: StorageLike): LocalRepositorie
         productId: input.productId,
         type: 'marketing',
         name: input.name,
+        enabled: true,
         stages: input.stages ?? defaultMarketingStages(),
         costs: {
           mediaSpend: input.costs?.mediaSpend ?? 0,
@@ -264,6 +265,7 @@ export function createLocalRepositories(storage?: StorageLike): LocalRepositorie
           personnel: input.costs?.personnel ?? 0,
           tools: input.costs?.tools ?? 0,
         },
+        campaigns: input.campaigns ?? [],
         createdAt: ts,
         updatedAt: ts,
       }
@@ -281,6 +283,7 @@ export function createLocalRepositories(storage?: StorageLike): LocalRepositorie
         productId: input.productId,
         type: 'sales',
         name: input.name,
+        enabled: true,
         stages: input.stages ?? defaultSalesStages(),
         costs: {
           personnel: input.costs?.personnel ?? 0,
@@ -304,17 +307,23 @@ export function createLocalRepositories(storage?: StorageLike): LocalRepositorie
         ...current,
         name: input.name ?? current.name,
         stages: input.stages ?? current.stages,
+        enabled: input.enabled ?? current.enabled ?? true,
         updatedAt: nowIso(),
       }
-      if (current.type === 'marketing' && updated.type === 'marketing' && input.marketingCosts) {
-        updated = {
-          ...updated,
-          costs: {
-            mediaSpend: input.marketingCosts.mediaSpend ?? current.costs.mediaSpend,
-            agency: input.marketingCosts.agency ?? current.costs.agency,
-            personnel: input.marketingCosts.personnel ?? current.costs.personnel,
-            tools: input.marketingCosts.tools ?? current.costs.tools,
-          },
+      if (current.type === 'marketing' && updated.type === 'marketing') {
+        if (input.campaigns) {
+          updated = { ...updated, campaigns: input.campaigns }
+        }
+        if (input.marketingCosts) {
+          updated = {
+            ...updated,
+            costs: {
+              mediaSpend: input.marketingCosts.mediaSpend ?? current.costs.mediaSpend,
+              agency: input.marketingCosts.agency ?? current.costs.agency,
+              personnel: input.marketingCosts.personnel ?? current.costs.personnel,
+              tools: input.marketingCosts.tools ?? current.costs.tools,
+            },
+          }
         }
       }
       if (current.type === 'sales' && updated.type === 'sales' && input.salesCosts) {

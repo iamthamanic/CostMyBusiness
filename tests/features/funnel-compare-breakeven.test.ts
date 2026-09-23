@@ -26,6 +26,7 @@ const salesFixture: SalesFunnel = {
   id: 'fnl_sales',
   productId: 'prd_1',
   type: 'sales',
+  enabled: true,
   name: 'Outbound',
   stages: [
     { key: 'leads', labelDe: 'Leads', order: 0, count: 200 },
