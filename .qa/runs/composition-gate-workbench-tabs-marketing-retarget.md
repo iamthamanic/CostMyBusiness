@@ -1,6 +1,6 @@
 # Composition Gate — workbench-tabs-marketing-retarget
 
-- HEAD_SHA: 9a614302850e7aeb06444d1230fbfb25b3121a89
+- HEAD_SHA: 9b08da51049aa3e9cc802ca98c1c0d24d24707a9
 - Date: 2026-09-23
 - Verdict: SKIPPED
 
