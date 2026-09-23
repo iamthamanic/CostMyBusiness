@@ -82,6 +82,10 @@ Modular monolith with vertical feature slices and a pure shared TypeScript domai
 4. Implement one vertical user-value slice at a time.
 5. Pipeline: `@verify-ticket` → `@composition-gate` → `@verify-ui` → `@review-ticket` → `@ecc-check`.
 
+## Recent changes
+
+- **2026-09-23** — Product tabs on Kalkulator, editable product root, marketing campaigns + retarget CPA under funnels (`issue/workbench-tabs-marketing-retarget`)
+
 ## License
 
 Not defined yet.

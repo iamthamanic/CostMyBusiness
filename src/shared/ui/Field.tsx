@@ -18,7 +18,7 @@ export function Field({ label, hint, error, id, className = '', ...rest }: Props
       {hint ? <span className="text-xs text-[color:var(--ink-muted)]">{hint}</span> : null}
       <input
         id={fieldId}
-        className={`rounded-md border border-[color:var(--line-default)] bg-white px-3 py-2 text-[color:var(--ink-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring)] ${className}`}
+        className={`rounded-[var(--radius-control)] border border-[color:var(--line-default)] bg-white px-3 py-2 text-[color:var(--ink-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[color:var(--focus-ring)] ${className}`}
         {...rest}
       />
       {error ? (

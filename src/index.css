@@ -1,8 +1,10 @@
 @import 'tailwindcss';
 
+/* Ledger / instrument panel — DESIGN.md §6 */
 :root {
-  --surface-canvas: #f4f6f8;
+  --surface-canvas: #eef1f5;
   --surface-panel: #ffffff;
+  --surface-rail: #f7f8fb;
   --ink-primary: #172033;
   --ink-muted: #657087;
   --accent-analysis: #3559c7;
@@ -10,7 +12,11 @@
   --semantic-profit: #16705a;
   --semantic-warning: #9a6812;
   --line-default: #d9dee7;
+  --line-strong: #b8c0cf;
   --focus-ring: #1e5eff;
+  --radius-panel: 12px;
+  --radius-control: 8px;
+  --font-ui: 'Manrope', 'Avenir Next', 'Segoe UI', system-ui, sans-serif;
 }
 
 html,
@@ -21,16 +27,52 @@ body,
 
 body {
   margin: 0;
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    Segoe UI,
-    Roboto,
-    Helvetica,
-    Arial,
-    sans-serif;
+  font-family: var(--font-ui);
+  font-feature-settings: 'ss01' on, 'tnum' on;
   color: var(--ink-primary);
-  background: var(--surface-canvas);
+  background-color: var(--surface-canvas);
+  background-image:
+    linear-gradient(rgba(23, 32, 51, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(23, 32, 51, 0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-attachment: fixed;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes product-tab-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.product-tab-active {
+  background-color: #e8eefc;
+  background-image: linear-gradient(
+    105deg,
+    #e8eefc 0%,
+    #e8eefc 38%,
+    #d6e2ff 50%,
+    #e8eefc 62%,
+    #e8eefc 100%
+  );
+  background-size: 220% 100%;
+  animation: product-tab-shimmer 2.8s ease-in-out infinite;
+  box-shadow: inset 0 -2px 0 var(--accent-analysis);
 }

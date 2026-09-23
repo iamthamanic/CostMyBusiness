@@ -21,19 +21,34 @@ export const MarketingOperatingCostsSchema = z.object({
   tools: z.number().finite().nonnegative().default(0),
 })
 
+/** Campaign inside a marketing funnel — name, CPA, conversion rate. */
+export const MarketingCampaignSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  /** EUR per conversion (CPA). */
+  costPerConversion: z.number().finite().nonnegative().default(0),
+  /** Conversion rate 0–1 (UI may show %). */
+  conversionRate: z.number().finite().min(0).max(1).default(0),
+  /** Standard acquisition vs retarget follow-on. */
+  kind: z.enum(['standard', 'retarget']).default('standard'),
+})
+
 export const MarketingFunnelSchema = z.object({
   id: z.string().min(1),
   productId: z.string().min(1),
   type: z.literal('marketing'),
   name: z.string().min(1),
+  enabled: z.boolean().default(true),
   stages: z.array(FunnelStageSchema).min(1),
   costs: MarketingOperatingCostsSchema,
+  campaigns: z.array(MarketingCampaignSchema).default([]),
   createdAt: z.string().min(1),
   updatedAt: z.string().min(1),
 })
 
 export type FunnelStage = z.infer<typeof FunnelStageSchema>
 export type MarketingOperatingCosts = z.infer<typeof MarketingOperatingCostsSchema>
+export type MarketingCampaign = z.infer<typeof MarketingCampaignSchema>
 export type MarketingFunnel = z.infer<typeof MarketingFunnelSchema>
 
 export type CreateMarketingFunnelInput = {
@@ -41,12 +56,28 @@ export type CreateMarketingFunnelInput = {
   name: string
   stages?: FunnelStage[]
   costs?: Partial<MarketingOperatingCosts>
+  campaigns?: MarketingCampaign[]
 }
 
 export type UpdateMarketingFunnelInput = {
   name?: string
   stages?: FunnelStage[]
   costs?: Partial<MarketingOperatingCosts>
+  enabled?: boolean
+  campaigns?: MarketingCampaign[]
+}
+
+export function createEmptyCampaign(
+  name = 'Neue Kampagne',
+  kind: 'standard' | 'retarget' = 'standard',
+): MarketingCampaign {
+  return {
+    id: `cmp_${crypto.randomUUID().slice(0, 8)}`,
+    name,
+    costPerConversion: 0,
+    conversionRate: 0,
+    kind,
+  }
 }
 
 /** Default Google-Ads-like stages for new funnels. */

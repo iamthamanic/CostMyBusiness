@@ -91,6 +91,7 @@ describe('workbench calculation correctness', () => {
       id: 'fnl_g',
       productId: product.id,
       type: 'marketing',
+      enabled: true,
       name: 'Google Ads',
       stages: [
         { key: 'impressions', labelDe: 'Impressions', order: 0, count: 10000 },
@@ -98,6 +99,7 @@ describe('workbench calculation correctness', () => {
         { key: 'conversions', labelDe: 'Conversions', order: 2, count: 50 },
       ],
       costs: { mediaSpend: 1000, agency: 100, personnel: 200, tools: 50 },
+      campaigns: [],
       createdAt: '2026-01-01T00:00:00.000Z',
       updatedAt: '2026-01-01T00:00:00.000Z',
     }

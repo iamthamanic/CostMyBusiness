@@ -2,16 +2,17 @@
  * Primary visual product calculator — CSS grid departments + result spine.
  * Location: src/features/cost-graph/ui/ProductCalculatorWorkbench.tsx
  */
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { evaluate } from '@/core/calculation'
 import type { DomainModel } from '@/core/model'
 import { useRepos } from '@/app/providers/ReposProvider'
 import type { Product } from '@/features/products'
-import type { ProductFunnel } from '@/features/funnels'
+import type { MarketingCampaign, ProductFunnel } from '@/features/funnels'
+import { createEmptyCampaign } from '@/features/funnels'
 import { Button } from '@/shared/ui'
 import { applyResolvedValuesToModel } from '../application/apply-resolved-values'
 import { composeFunnelsIntoModel } from '../application/compose-funnels-into-model'
-import { addCostNode, updateNodeInputs } from '../application/mutate-model'
+import { addCostNode, removeNode, updateNodeEnabled, updateNodeInputs } from '../application/mutate-model'
 import { projectWorkbenchView } from '../application/project-workbench-view'
 import { DepartmentColumn } from './DepartmentColumn'
 import { ProductRootCard } from './ProductRootCard'
@@ -26,6 +27,8 @@ type Props = {
   onProductChange: (next: Product) => void
   resolvedValues?: Record<string, number>
   showExpertGraph?: boolean
+  /** Szenario / Zeitraum / Experten — rendered above the product root card. */
+  contextToolbar?: ReactNode
 }
 
 type CostView = 'contribution' | 'fullyLoaded'
@@ -37,10 +40,13 @@ export function ProductCalculatorWorkbench({
   onProductChange,
   resolvedValues = {},
   showExpertGraph = false,
+  contextToolbar,
 }: Props) {
   const repos = useRepos()
   const [funnels, setFunnels] = useState<ProductFunnel[]>([])
   const [funnelError, setFunnelError] = useState<string | null>(null)
+  const [channelsPromoted, setChannelsPromoted] = useState(false)
+  const promotingRef = useRef(false)
   const [collapsedDepts, setCollapsedDepts] = useState<Set<string>>(() => new Set())
   const [expandedRows, setExpandedRows] = useState<Set<string>>(() => new Set())
   const [mobileOpen, setMobileOpen] = useState<Set<string>>(() => new Set(['operations']))
@@ -48,9 +54,15 @@ export function ProductCalculatorWorkbench({
   const [zoom, setZoom] = useState(1)
 
   useEffect(() => {
+    setChannelsPromoted(false)
+    promotingRef.current = false
+  }, [product.id])
+
+  useEffect(() => {
     void (async () => {
       try {
-        setFunnels(await repos.funnels.listByProduct(product.id))
+        const listed = await repos.funnels.listByProduct(product.id)
+        setFunnels(listed)
         setFunnelError(null)
       } catch {
         setFunnelError('Funnels konnten nicht geladen werden.')
@@ -58,6 +70,63 @@ export function ProductCalculatorWorkbench({
       }
     })()
   }, [product.id, repos.funnels])
+
+  // Template marketing channels (Google Ads, SEO, …) → real funnels with ⋯ / campaigns
+  useEffect(() => {
+    if (channelsPromoted || promotingRef.current) return
+    promotingRef.current = true
+    void (async () => {
+      try {
+        const listed = await repos.funnels.listByProduct(product.id)
+        const marketingGroup = model.nodes.find(
+          (n) => n.kind === 'group' && (n.key === 'g_marketing' || n.key === 'marketing'),
+        )
+        if (!marketingGroup) {
+          setFunnels(listed)
+          setChannelsPromoted(true)
+          return
+        }
+
+        const channelCosts = model.nodes.filter(
+          (n) => n.parentId === marketingGroup.id && n.kind === 'cost',
+        )
+        let nextModel = model
+        const nextFunnels = [...listed]
+        let modelDirty = false
+
+        for (const cost of channelCosts) {
+          const existing = nextFunnels.find(
+            (f) => f.type === 'marketing' && f.name === cost.label,
+          )
+          if (!existing) {
+            const seedRate = typeof cost.inputs.rate === 'number' ? cost.inputs.rate : 0
+            const campaign = {
+              ...createEmptyCampaign('Standard'),
+              costPerConversion: seedRate,
+              conversionRate: seedRate > 0 ? 1 : 0,
+            }
+            const created = await repos.funnels.createMarketing({
+              productId: product.id,
+              name: cost.label,
+              campaigns: [campaign],
+            })
+            nextFunnels.push(created)
+          }
+          if (cost.enabled !== false) {
+            nextModel = updateNodeEnabled(nextModel, cost.id, false)
+            modelDirty = true
+          }
+        }
+
+        setFunnels(nextFunnels)
+        if (modelDirty) onModelChange(nextModel)
+        setChannelsPromoted(true)
+      } catch {
+        promotingRef.current = false
+        setChannelsPromoted(true)
+      }
+    })()
+  }, [channelsPromoted, product.id, model, repos.funnels, onModelChange])
 
   const composed = useMemo(() => {
     const withFunnels = composeFunnelsIntoModel(model, funnels)
@@ -94,9 +163,12 @@ export function ProductCalculatorWorkbench({
   }
 
   function onPricingChange(patch: {
+    name?: string
     sellingPrice?: number
     taxRatePercent?: number
     priceKind?: 'gross' | 'net'
+    pricingBasis?: Product['pricingBasis']
+    currency?: string
   }) {
     onProductChange({
       ...product,
@@ -121,6 +193,95 @@ export function ProductCalculatorWorkbench({
     }
   }
 
+  function onSetEnabled(nodeId: string, enabled: boolean) {
+    if (nodeId.startsWith('n_funnel_')) {
+      const funnelId = nodeId.replace(/^n_funnel_/, '')
+      void (async () => {
+        try {
+          const updated = await repos.funnels.update(funnelId, { enabled })
+          setFunnels((prev) => prev.map((f) => (f.id === updated.id ? updated : f)))
+          setFunnelError(null)
+        } catch {
+          setFunnelError('Funnel-Status konnte nicht gespeichert werden.')
+        }
+      })()
+      return
+    }
+    onModelChange(updateNodeEnabled(model, nodeId, enabled))
+  }
+
+  function onRemoveCost(nodeId: string) {
+    if (nodeId.startsWith('n_funnel_')) {
+      const funnelId = nodeId.replace(/^n_funnel_/, '')
+      const funnel = funnels.find((f) => f.id === funnelId)
+      const ok = window.confirm(
+        `„${funnel?.name ?? 'Funnel'}“ wirklich entfernen?`,
+      )
+      if (!ok) return
+      void (async () => {
+        try {
+          await repos.funnels.delete(funnelId)
+          setFunnels((prev) => prev.filter((f) => f.id !== funnelId))
+          setFunnelError(null)
+        } catch {
+          setFunnelError('Funnel konnte nicht entfernt werden.')
+        }
+      })()
+      return
+    }
+    const node = model.nodes.find((n) => n.id === nodeId)
+    const ok = window.confirm(`„${node?.label ?? 'Position'}“ wirklich entfernen?`)
+    if (!ok) return
+    onModelChange(removeNode(model, nodeId))
+  }
+
+  function onAddFunnel(tone: 'marketing' | 'sales') {
+    void (async () => {
+      try {
+        const created =
+          tone === 'marketing'
+            ? await repos.funnels.createMarketing({
+                productId: product.id,
+                name: 'Neuer Marketing-Funnel',
+              })
+            : await repos.funnels.createSales({
+                productId: product.id,
+                name: 'Neuer Sales-Funnel',
+              })
+        setFunnels((prev) => [...prev, created])
+        setExpandedRows((prev) => new Set(prev).add(`n_funnel_${created.id}`))
+        setFunnelError(null)
+      } catch {
+        setFunnelError('Funnel konnte nicht angelegt werden.')
+      }
+    })()
+  }
+
+  function onCampaignsChange(funnelId: string, campaigns: MarketingCampaign[]) {
+    void (async () => {
+      try {
+        const updated = await repos.funnels.update(funnelId, { campaigns })
+        setFunnels((prev) => prev.map((f) => (f.id === updated.id ? updated : f)))
+        setFunnelError(null)
+      } catch {
+        setFunnelError('Kampagnen konnten nicht gespeichert werden.')
+      }
+    })()
+  }
+
+  function onRenameFunnel(funnelId: string, name: string) {
+    const nextName = name.trim() || 'Funnel'
+    void (async () => {
+      try {
+        const updated = await repos.funnels.update(funnelId, { name: nextName })
+        setFunnels((prev) => prev.map((f) => (f.id === updated.id ? updated : f)))
+        setFunnelError(null)
+      } catch {
+        setFunnelError('Funnel-Name konnte nicht gespeichert werden.')
+      }
+    })()
+  }
+
   const hideAllocated = costView === 'contribution'
   const deptCount = Math.max(view.departments.length, 1)
 
@@ -133,16 +294,22 @@ export function ProductCalculatorWorkbench({
       ) : null}
 
       <div
-        className="overflow-x-auto rounded-[16px] border border-[color:var(--line-default)] bg-[color:var(--surface-canvas)] p-4 md:p-6"
+        className="overflow-x-auto rounded-[var(--radius-panel)] border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] p-4 md:p-6"
         data-testid="workbench-canvas"
       >
         <div
-          className="mx-auto origin-top transition-transform md:min-w-[1100px]"
+          className="mx-auto origin-top transition-transform md:min-w-[1280px]"
           style={{
             transform: `scale(${zoom})`,
             width: zoom === 1 ? '100%' : `${100 / zoom}%`,
           }}
         >
+          {contextToolbar ? (
+            <div className="mb-3 flex flex-wrap items-center justify-center gap-3">
+              {contextToolbar}
+            </div>
+          ) : null}
+
           <div className="flex justify-center">
             <ProductRootCard product={product} onPricingChange={onPricingChange} />
           </div>
@@ -155,7 +322,7 @@ export function ProductCalculatorWorkbench({
             <div
               className="grid gap-3"
               style={{
-                gridTemplateColumns: `repeat(${deptCount}, minmax(200px, 1fr))`,
+                gridTemplateColumns: `repeat(${deptCount}, minmax(240px, 1fr))`,
               }}
               data-testid="department-grid"
             >
@@ -183,7 +350,17 @@ export function ProductCalculatorWorkbench({
                     })
                   }}
                   onInputChange={onCostInput}
+                  onSetEnabled={onSetEnabled}
+                  onRemove={onRemoveCost}
                   onAddCost={() => onAddCostToDept(dept.nodeId)}
+                  funnels={funnels}
+                  onAddFunnel={
+                    dept.tone === 'marketing' || dept.tone === 'sales'
+                      ? () => onAddFunnel(dept.tone === 'marketing' ? 'marketing' : 'sales')
+                      : undefined
+                  }
+                  onCampaignsChange={onCampaignsChange}
+                  onRenameFunnel={onRenameFunnel}
                 />
               ))}
             </div>
@@ -226,6 +403,7 @@ export function ProductCalculatorWorkbench({
                         collapsed={false}
                         expandedRowIds={expandedRows}
                         hideAllocated={hideAllocated && dept.tone === 'overhead'}
+                        funnels={funnels}
                         onToggleCollapse={() => undefined}
                         onToggleRow={(id) => {
                           setExpandedRows((prev) => {
@@ -236,7 +414,16 @@ export function ProductCalculatorWorkbench({
                           })
                         }}
                         onInputChange={onCostInput}
+                        onSetEnabled={onSetEnabled}
+                        onRemove={onRemoveCost}
                         onAddCost={() => onAddCostToDept(dept.nodeId)}
+                        onAddFunnel={
+                          dept.tone === 'marketing' || dept.tone === 'sales'
+                            ? () => onAddFunnel(dept.tone === 'marketing' ? 'marketing' : 'sales')
+                            : undefined
+                        }
+                        onCampaignsChange={onCampaignsChange}
+                        onRenameFunnel={onRenameFunnel}
                       />
                     </div>
                   ) : null}
@@ -251,17 +438,21 @@ export function ProductCalculatorWorkbench({
         </div>
       </div>
 
-      <footer className="flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-[color:var(--line-default)] bg-white px-3 py-2">
-        <div className="flex items-center gap-2" role="group" aria-label="Ansicht">
-          <span className="text-xs font-medium text-[color:var(--ink-muted)]">Ansicht</span>
+      <footer className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-panel)] border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] px-3 py-2">
+        <div className="flex items-center gap-1" role="group" aria-label="Ansicht">
+          <span className="mr-1 text-[12px] font-medium text-[color:var(--ink-muted)]">
+            Ansicht
+          </span>
           <Button
             variant={costView === 'contribution' ? 'primary' : 'ghost'}
+            className="h-8 px-2.5 text-xs"
             onClick={() => setCostView('contribution')}
           >
             Contribution
           </Button>
           <Button
             variant={costView === 'fullyLoaded' ? 'primary' : 'ghost'}
+            className="h-8 px-2.5 text-xs"
             onClick={() => setCostView('fullyLoaded')}
           >
             Fully Loaded
@@ -270,6 +461,7 @@ export function ProductCalculatorWorkbench({
         <div className="hidden items-center gap-1 md:flex" role="group" aria-label="Zoom">
           <Button
             variant="ghost"
+            className="h-8 w-8 px-0"
             onClick={() => setZoom((z) => Math.max(0.7, Number((z - 0.1).toFixed(1))))}
             aria-label="Verkleinern"
           >
@@ -280,12 +472,18 @@ export function ProductCalculatorWorkbench({
           </span>
           <Button
             variant="ghost"
+            className="h-8 w-8 px-0"
             onClick={() => setZoom((z) => Math.min(1.2, Number((z + 0.1).toFixed(1))))}
             aria-label="Vergrößern"
           >
             +
           </Button>
-          <Button variant="ghost" onClick={() => setZoom(1)} aria-label="100 Prozent">
+          <Button
+            variant="ghost"
+            className="h-8 px-2.5 text-xs"
+            onClick={() => setZoom(1)}
+            aria-label="100 Prozent"
+          >
             Fit
           </Button>
         </div>

@@ -15,6 +15,7 @@ export {
   addCostNode,
   duplicateNode,
   removeNode,
+  updateNodeEnabled,
   updateNodeInputs,
   updateNodeLabel,
 } from './application/mutate-model'

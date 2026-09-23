@@ -17,6 +17,7 @@ export const SalesFunnelSchema = z.object({
   productId: z.string().min(1),
   type: z.literal('sales'),
   name: z.string().min(1),
+  enabled: z.boolean().default(true),
   stages: z.array(FunnelStageSchema).min(1),
   costs: SalesOperatingCostsSchema,
   createdAt: z.string().min(1),

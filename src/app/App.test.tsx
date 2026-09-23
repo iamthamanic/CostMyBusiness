@@ -6,7 +6,8 @@ describe('App shell', () => {
   it('renders German overview branding and nav', () => {
     render(<App />)
     expect(screen.getAllByText('CostMyBusiness').length).toBeGreaterThan(0)
-    expect(screen.getByRole('heading', { name: 'Übersicht' })).toBeInTheDocument()
+    expect(screen.getByTestId('product-tabs')).toBeInTheDocument()
     expect(screen.getByRole('navigation', { name: 'Hauptnavigation' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Kalkulator' })).toBeInTheDocument()
   })
 })

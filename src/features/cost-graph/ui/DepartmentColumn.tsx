@@ -2,8 +2,11 @@
  * Department column container for the product calculator workbench.
  * Location: src/features/cost-graph/ui/DepartmentColumn.tsx
  */
+import { useEffect, useRef, useState } from 'react'
+import type { MarketingCampaign, MarketingFunnel, ProductFunnel } from '@/features/funnels'
 import type { WorkbenchDepartment } from '../application/project-workbench-view'
 import { CostPositionRow } from './CostPositionRow'
+import { MarketingFunnelCard } from './MarketingFunnelCard'
 
 const TONE: Record<
   WorkbenchDepartment['tone'],
@@ -46,10 +49,16 @@ type Props = {
   collapsed: boolean
   expandedRowIds: Set<string>
   hideAllocated?: boolean
+  funnels?: ProductFunnel[]
   onToggleCollapse: () => void
   onToggleRow: (nodeId: string) => void
   onInputChange: (nodeId: string, fieldId: string, value: number) => void
+  onSetEnabled: (nodeId: string, enabled: boolean) => void
+  onRemove: (nodeId: string) => void
   onAddCost: () => void
+  onAddFunnel?: () => void
+  onCampaignsChange?: (funnelId: string, campaigns: MarketingCampaign[]) => void
+  onRenameFunnel?: (funnelId: string, name: string) => void
 }
 
 function formatMoney(n: number | null): string {
@@ -57,23 +66,53 @@ function formatMoney(n: number | null): string {
   return `${n.toFixed(2)} €`
 }
 
+function funnelIdFromRow(nodeId: string): string {
+  return nodeId.replace(/^n_funnel_/, '')
+}
+
 export function DepartmentColumn({
   department,
   collapsed,
   expandedRowIds,
   hideAllocated = false,
+  funnels = [],
   onToggleCollapse,
   onToggleRow,
   onInputChange,
+  onSetEnabled,
+  onRemove,
   onAddCost,
+  onAddFunnel,
+  onCampaignsChange,
+  onRenameFunnel,
 }: Props) {
   const tone = TONE[department.tone]
-  const rows = hideAllocated
+  // Hide disabled template channel costs once promoted to funnels
+  const rows = (hideAllocated
     ? department.rows.filter((r) => r.allocationRule !== 'allocated')
     : department.rows
+  ).filter((r) => !(department.tone === 'marketing' && !r.isFunnel && !r.enabled))
+  const canAddFunnel =
+    (department.tone === 'marketing' || department.tone === 'sales') && Boolean(onAddFunnel)
+  const [addMenuOpen, setAddMenuOpen] = useState(false)
+  const addMenuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!addMenuOpen) return
+    function onDoc(e: MouseEvent) {
+      if (addMenuRef.current && !addMenuRef.current.contains(e.target as Node)) {
+        setAddMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [addMenuOpen])
 
   const displayTotal = hideAllocated
-    ? rows.reduce((sum, r) => (r.perUnit !== null ? sum + r.perUnit : sum), 0)
+    ? rows.reduce(
+        (sum, r) => (r.enabled && r.perUnit !== null ? sum + r.perUnit : sum),
+        0,
+      )
     : department.totalPerUnit
 
   const share =
@@ -83,7 +122,7 @@ export function DepartmentColumn({
 
   return (
     <section
-      className={`flex min-w-[220px] flex-col rounded-[14px] border ${tone.border} ${tone.bg} p-3`}
+      className={`flex min-w-0 flex-col rounded-[14px] border ${tone.border} ${tone.bg} p-3`}
       data-testid={`dept-${department.tone}`}
       data-collapsed={collapsed ? 'true' : 'false'}
     >
@@ -131,25 +170,86 @@ export function DepartmentColumn({
 
       {!collapsed ? (
         <div className="flex flex-1 flex-col gap-1.5">
-          {rows.map((row) => (
-            <CostPositionRow
-              key={row.nodeId}
-              row={row}
-              expanded={expandedRowIds.has(row.nodeId)}
-              onToggle={() => onToggleRow(row.nodeId)}
-              onInputChange={(fieldId, value) => onInputChange(row.nodeId, fieldId, value)}
-            />
-          ))}
+          {rows.map((row) => {
+            if (row.isFunnel) {
+              const fid = funnelIdFromRow(row.nodeId)
+              const funnel = funnels.find((f) => f.id === fid)
+              if (funnel?.type === 'marketing') {
+                return (
+                  <MarketingFunnelCard
+                    key={row.nodeId}
+                    funnel={funnel as MarketingFunnel}
+                    row={row}
+                    expanded={expandedRowIds.has(row.nodeId)}
+                    onToggle={() => onToggleRow(row.nodeId)}
+                    onSetEnabled={(enabled) => onSetEnabled(row.nodeId, enabled)}
+                    onDeleteFunnel={() => onRemove(row.nodeId)}
+                    onRename={(name) => onRenameFunnel?.(fid, name)}
+                    onCampaignsChange={(campaigns) => onCampaignsChange?.(fid, campaigns)}
+                  />
+                )
+              }
+            }
+            return (
+              <CostPositionRow
+                key={row.nodeId}
+                row={row}
+                expanded={expandedRowIds.has(row.nodeId)}
+                onToggle={() => onToggleRow(row.nodeId)}
+                onInputChange={(fieldId, value) => onInputChange(row.nodeId, fieldId, value)}
+                onSetEnabled={(enabled) => onSetEnabled(row.nodeId, enabled)}
+                onRemove={() => onRemove(row.nodeId)}
+              />
+            )
+          })}
           {rows.length === 0 ? (
-            <p className="text-xs text-[color:var(--ink-muted)]">Keine direkten Positionen</p>
+            <p className="text-xs text-[color:var(--ink-muted)]">Keine Positionen</p>
           ) : null}
-          <button
-            type="button"
-            className="mt-auto rounded-md border border-dashed border-[color:var(--line-default)] bg-white/80 px-2 py-1.5 text-xs text-[color:var(--ink-muted)] hover:border-[color:var(--accent-analysis)] hover:text-[color:var(--accent-analysis)]"
-            onClick={onAddCost}
-          >
-            + Kostenposition
-          </button>
+          <div className="relative mt-auto" ref={addMenuRef}>
+            <button
+              type="button"
+              className="w-full rounded-md border border-dashed border-[color:var(--line-default)] bg-white/80 px-2 py-1.5 text-xs text-[color:var(--ink-muted)] hover:border-[color:var(--accent-analysis)] hover:text-[color:var(--accent-analysis)]"
+              data-testid={`add-position-${department.tone}`}
+              aria-haspopup={canAddFunnel ? 'menu' : undefined}
+              aria-expanded={canAddFunnel ? addMenuOpen : undefined}
+              onClick={() => {
+                if (canAddFunnel) setAddMenuOpen((o) => !o)
+                else onAddCost()
+              }}
+            >
+              + Position hinzufügen
+            </button>
+            {canAddFunnel && addMenuOpen ? (
+              <div
+                role="menu"
+                className="absolute bottom-full left-0 z-30 mb-1 w-full rounded-[8px] border border-[color:var(--line-default)] bg-white py-1 shadow-md"
+              >
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="block w-full px-3 py-1.5 text-left text-xs hover:bg-[color:var(--surface-rail)]"
+                  onClick={() => {
+                    setAddMenuOpen(false)
+                    onAddCost()
+                  }}
+                >
+                  Kostenposition
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="block w-full px-3 py-1.5 text-left text-xs hover:bg-[color:var(--surface-rail)]"
+                  data-testid={`add-funnel-${department.tone}`}
+                  onClick={() => {
+                    setAddMenuOpen(false)
+                    onAddFunnel?.()
+                  }}
+                >
+                  Funnel
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
       ) : (
         <p className="text-xs text-[color:var(--ink-muted)]">

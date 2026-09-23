@@ -99,7 +99,7 @@ function computeLeaf(
   results: Map<NodeId, NodeResult>,
 ): CalcValue {
   if (!node.enabled) {
-    return unresolved('disabled', `Node ${node.key} is disabled`)
+    return { status: 'ok', perUnit: 0, periodTotal: 0 }
   }
 
   if (node.kind === 'revenue') {
@@ -340,7 +340,8 @@ export function evaluate(model: DomainModel): EvaluationResult {
     let value: CalcValue
 
     if (!node.enabled) {
-      value = unresolved('disabled', `Node ${node.key} is disabled`)
+      // Deactivated positions contribute 0 — do not poison group/spine totals.
+      value = { status: 'ok', perUnit: 0, periodTotal: 0 }
     } else if (node.kind === 'result' && node.key === 'contribution') {
       value = computeContribution(upstreamIds, nodeById, results)
     } else if (node.kind === 'result' && (node.key === 'profit' || node.key === 'fully_loaded_profit')) {

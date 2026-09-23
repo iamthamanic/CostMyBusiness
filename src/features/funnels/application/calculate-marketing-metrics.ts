@@ -2,13 +2,18 @@
  * Pure marketing-funnel metric derivation (media-only vs fully loaded).
  * Location: src/features/funnels/application/calculate-marketing-metrics.ts
  */
-import type { MarketingFunnel } from '../domain/marketing-funnel'
+import type { MarketingCampaign, MarketingFunnel } from '../domain/marketing-funnel'
 
 export type FunnelMetricStatus = 'ok' | 'unresolved'
 
 export type FunnelMetricValue =
   | { status: 'ok'; value: number; scope: 'media_only' | 'fully_loaded' | 'volume' }
-  | { status: 'unresolved'; reason: string; messageDe: string; scope: 'media_only' | 'fully_loaded' | 'volume' }
+  | {
+      status: 'unresolved'
+      reason: string
+      messageDe: string
+      scope: 'media_only' | 'fully_loaded' | 'volume'
+    }
 
 export type MarketingFunnelMetrics = {
   impressions: FunnelMetricValue
@@ -17,11 +22,8 @@ export type MarketingFunnelMetrics = {
   ctr: FunnelMetricValue
   cvr: FunnelMetricValue
   cpc: FunnelMetricValue
-  /** Media spend / conversions */
   mediaCpa: FunnelMetricValue
-  /** Media spend / conversions (alias scope for CAC media-only) */
   mediaCac: FunnelMetricValue
-  /** (media + agency + personnel + tools) / conversions */
   fullyLoadedCac: FunnelMetricValue
   mediaSpend: number
   operatingCosts: number
@@ -44,6 +46,55 @@ function ok(scope: FunnelMetricValue['scope'], value: number): FunnelMetricValue
   return { status: 'ok', value, scope }
 }
 
+/** Weighted average CPA by conversion rate; falls back to simple average. */
+function blendWeighted(campaigns: MarketingCampaign[]): FunnelMetricValue {
+  if (campaigns.length === 0) {
+    return unresolved('fully_loaded', 'no_campaigns', 'Keine Kampagnen vorhanden.')
+  }
+  const weightSum = campaigns.reduce((s, c) => s + Math.max(c.conversionRate, 0), 0)
+  if (weightSum > 0) {
+    const blended =
+      campaigns.reduce((s, c) => s + c.costPerConversion * Math.max(c.conversionRate, 0), 0) /
+      weightSum
+    return ok('fully_loaded', blended)
+  }
+  const avg = campaigns.reduce((s, c) => s + c.costPerConversion, 0) / campaigns.length
+  return ok('fully_loaded', avg)
+}
+
+/**
+ * Standard campaigns: weighted CPA blend.
+ * Retarget campaigns: added on top (weighted if rates set, else sum of CPAs).
+ */
+export function blendCampaignCpa(campaigns: MarketingCampaign[]): FunnelMetricValue {
+  if (campaigns.length === 0) {
+    return unresolved('fully_loaded', 'no_campaigns', 'Keine Kampagnen vorhanden.')
+  }
+  const standard = campaigns.filter((c) => c.kind !== 'retarget')
+  const retarget = campaigns.filter((c) => c.kind === 'retarget')
+
+  let base = 0
+  if (standard.length > 0) {
+    const blended = blendWeighted(standard)
+    if (blended.status !== 'ok') return blended
+    base = blended.value
+  }
+
+  let retargetAdd = 0
+  if (retarget.length > 0) {
+    const weightSum = retarget.reduce((s, c) => s + Math.max(c.conversionRate, 0), 0)
+    if (weightSum > 0) {
+      retargetAdd =
+        retarget.reduce((s, c) => s + c.costPerConversion * Math.max(c.conversionRate, 0), 0) /
+        weightSum
+    } else {
+      retargetAdd = retarget.reduce((s, c) => s + c.costPerConversion, 0)
+    }
+  }
+
+  return ok('fully_loaded', base + retargetAdd)
+}
+
 function resolveVolume(funnel: MarketingFunnel): {
   impressions: FunnelMetricValue
   clicks: FunnelMetricValue
@@ -64,7 +115,11 @@ function resolveVolume(funnel: MarketingFunnel): {
       ? unresolved('volume', 'missing_impressions', 'Impressionen fehlen.')
       : ok('volume', impressionsCount)
 
-  if (clicksCount === undefined && impressionsCount !== undefined && clicksStage?.conversionRate !== undefined) {
+  if (
+    clicksCount === undefined &&
+    impressionsCount !== undefined &&
+    clicksStage?.conversionRate !== undefined
+  ) {
     clicksCount = impressionsCount * clicksStage.conversionRate
   }
 
@@ -92,7 +147,11 @@ function resolveVolume(funnel: MarketingFunnel): {
 
   const conversions: FunnelMetricValue =
     conversionsCount === undefined
-      ? unresolved('volume', 'missing_conversions', 'Conversions fehlen — CPA/CAC können nicht berechnet werden.')
+      ? unresolved(
+          'volume',
+          'missing_conversions',
+          'Conversions fehlen — CPA/CAC können nicht berechnet werden.',
+        )
       : ok('volume', conversionsCount)
 
   let cvr: FunnelMetricValue
@@ -109,8 +168,33 @@ function resolveVolume(funnel: MarketingFunnel): {
 
 /**
  * Derive acquisition metrics. Never returns silent zero for missing denominators.
+ * When campaigns exist, CAC uses campaign-blended CPA.
  */
 export function calculateMarketingMetrics(funnel: MarketingFunnel): MarketingFunnelMetrics {
+  const campaigns = funnel.campaigns ?? []
+  if (campaigns.length > 0) {
+    const blended = blendCampaignCpa(campaigns)
+    const emptyVol = unresolved('volume', 'campaign_mode', 'Volumen aus Kampagnen-Modus.')
+    const media =
+      blended.status === 'ok'
+        ? ok('media_only', blended.value)
+        : unresolved('media_only', blended.reason, blended.messageDe)
+    return {
+      impressions: emptyVol,
+      clicks: emptyVol,
+      conversions: emptyVol,
+      ctr: emptyVol,
+      cvr: emptyVol,
+      cpc: emptyVol,
+      mediaCpa: media,
+      mediaCac: media,
+      fullyLoadedCac: blended,
+      mediaSpend: 0,
+      operatingCosts: 0,
+      fullyLoadedSpend: 0,
+    }
+  }
+
   const volume = resolveVolume(funnel)
   const mediaSpend = funnel.costs.mediaSpend
   const operatingCosts = funnel.costs.agency + funnel.costs.personnel + funnel.costs.tools

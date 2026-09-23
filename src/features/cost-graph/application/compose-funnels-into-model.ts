@@ -54,20 +54,15 @@ export function composeFunnelsIntoModel(
     const key = `funnel_${funnel.id}`
 
     let rate: number | undefined
-    let unresolved = false
     if (funnel.type === 'marketing') {
       const m = calculateMarketingMetrics(funnel)
       if (m.fullyLoadedCac.status === 'ok') {
         rate = m.fullyLoadedCac.value
-      } else {
-        unresolved = true
       }
     } else {
       const m = calculateSalesMetrics(funnel)
       if (m.salesAcquisitionCost.status === 'ok') {
         rate = m.salesAcquisitionCost.value
-      } else {
-        unresolved = true
       }
     }
 
@@ -93,14 +88,15 @@ export function composeFunnelsIntoModel(
       kind: 'cost',
       key,
       label: funnel.name,
-      enabled: !unresolved || rate !== undefined,
+      // User disable wins; incomplete funnels stay enabled in UI but contribute 0 via missing rate edge.
+      enabled: funnel.enabled ?? true,
       parentId: parent?.id,
       costBehavior: 'per_order',
       inputs: costInputs,
       allocation: { rule: 'direct' },
     })
 
-    if (contribution && rate !== undefined) {
+    if (contribution && rate !== undefined && (funnel.enabled ?? true)) {
       edges.push({
         id: `e_${id}_contribution`,
         sourceNodeId: id,
@@ -108,7 +104,7 @@ export function composeFunnelsIntoModel(
         relation: 'feeds',
       })
     }
-    if (parent) {
+    if (parent && rate !== undefined && (funnel.enabled ?? true)) {
       edges.push({
         id: `e_${id}_${parent.key}`,
         sourceNodeId: id,

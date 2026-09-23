@@ -1,20 +1,32 @@
 /**
- * Product root calculator — selling price / VAT / net revenue.
+ * Product root calculator — name, basis, selling price / VAT / net revenue.
  * Location: src/features/cost-graph/ui/ProductRootCard.tsx
  */
-import type { Product } from '@/features/products'
+import { useEffect, useState } from 'react'
+import type { PriceKind, PricingBasis, Product } from '@/features/products'
 import { resolveNetRevenue } from '@/core/pricing'
+
+type ProductPatch = {
+  name?: string
+  sellingPrice?: number
+  taxRatePercent?: number
+  priceKind?: PriceKind
+  pricingBasis?: PricingBasis
+  currency?: string
+}
 
 type Props = {
   product: Product
-  onPricingChange: (patch: {
-    sellingPrice?: number
-    taxRatePercent?: number
-    priceKind?: 'gross' | 'net'
-  }) => void
+  onPricingChange: (patch: ProductPatch) => void
 }
 
 export function ProductRootCard({ product, onPricingChange }: Props) {
+  const [nameDraft, setNameDraft] = useState(product.name)
+
+  useEffect(() => {
+    setNameDraft(product.name)
+  }, [product.name])
+
   const pricing = resolveNetRevenue({
     sellingPrice: product.sellingPrice,
     priceKind: product.priceKind,
@@ -22,6 +34,12 @@ export function ProductRootCard({ product, onPricingChange }: Props) {
     pricingBasis: product.pricingBasis,
     currency: product.currency,
   })
+
+  function commitName() {
+    const next = nameDraft.trim() || 'Neues Produkt'
+    if (next !== product.name) onPricingChange({ name: next })
+    else setNameDraft(product.name)
+  }
 
   return (
     <div
@@ -35,23 +53,51 @@ export function ProductRootCard({ product, onPricingChange }: Props) {
         >
           P
         </span>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--ink-muted)]">
             Produkt
           </p>
-          <h2 className="text-xl font-semibold tracking-tight text-[color:var(--ink-primary)]">
-            {product.name}
-          </h2>
-          <p className="mt-0.5 text-sm text-[color:var(--ink-muted)]">
-            {product.pricingBasis === 'per_order'
-              ? 'pro Auftrag'
-              : product.pricingBasis === 'per_customer'
-                ? 'pro Kunde'
-                : product.pricingBasis === 'per_month'
-                  ? 'pro Monat'
-                  : 'pro Einheit'}{' '}
-            · {product.currency}
-          </p>
+          <input
+            className="mt-0.5 w-full min-w-0 rounded-md border border-[color:var(--line-default)] bg-white px-2 py-1 text-xl font-semibold tracking-tight text-[color:var(--ink-primary)]"
+            value={nameDraft}
+            aria-label="Produktname"
+            data-testid="product-root-name"
+            onChange={(e) => setNameDraft(e.target.value)}
+            onBlur={commitName}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+            }}
+          />
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            <select
+              className="h-8 rounded-md border border-[color:var(--line-default)] bg-white px-2 text-sm text-[color:var(--ink-muted)]"
+              value={product.pricingBasis}
+              aria-label="Preisbasis"
+              data-testid="product-root-basis"
+              onChange={(e) =>
+                onPricingChange({ pricingBasis: e.target.value as PricingBasis })
+              }
+            >
+              <option value="per_order">pro Auftrag</option>
+              <option value="per_unit">pro Einheit</option>
+              <option value="per_customer">pro Kunde</option>
+              <option value="per_month">pro Monat</option>
+            </select>
+            <span className="text-sm text-[color:var(--ink-muted)]" aria-hidden>
+              ·
+            </span>
+            <select
+              className="h-8 rounded-md border border-[color:var(--line-default)] bg-white px-2 text-sm text-[color:var(--ink-muted)]"
+              value={product.currency}
+              aria-label="Währung"
+              data-testid="product-root-currency"
+              onChange={(e) => onPricingChange({ currency: e.target.value })}
+            >
+              <option value="EUR">EUR</option>
+              <option value="CHF">CHF</option>
+              <option value="USD">USD</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -100,7 +146,7 @@ export function ProductRootCard({ product, onPricingChange }: Props) {
             value={product.priceKind}
             aria-label="Preisart"
             onChange={(e) =>
-              onPricingChange({ priceKind: e.target.value as 'gross' | 'net' })
+              onPricingChange({ priceKind: e.target.value as PriceKind })
             }
           >
             <option value="gross">Brutto</option>

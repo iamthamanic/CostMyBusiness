@@ -25,6 +25,7 @@ function googleAdsFixture(overrides: Partial<MarketingFunnel> = {}): MarketingFu
     id: 'fnl_google',
     productId: 'prd_1',
     type: 'marketing',
+    enabled: true,
     name: 'Google Generic',
     stages: [
       { key: 'impressions', labelDe: 'Impressionen', order: 0, count: 100_000 },
@@ -37,6 +38,7 @@ function googleAdsFixture(overrides: Partial<MarketingFunnel> = {}): MarketingFu
       personnel: 800,
       tools: 200,
     },
+    campaigns: [],
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
     ...overrides,
@@ -62,6 +64,48 @@ describe('marketing funnel metrics', () => {
       expect(metrics.fullyLoadedCac.scope).toBe('fully_loaded')
     }
     expect(metrics.fullyLoadedSpend).toBe(5_500)
+  })
+
+  it('blends campaign CPA by conversion rate when campaigns exist', () => {
+    const metrics = calculateMarketingMetrics(
+      googleAdsFixture({
+        campaigns: [
+          { id: 'c1', name: 'Brand', costPerConversion: 20, conversionRate: 0.5 },
+          { id: 'c2', name: 'Generic', costPerConversion: 40, conversionRate: 0.5 },
+        ],
+      }),
+    )
+    expect(metrics.fullyLoadedCac.status).toBe('ok')
+    if (metrics.fullyLoadedCac.status === 'ok') {
+      expect(metrics.fullyLoadedCac.value).toBe(30)
+    }
+  })
+
+  it('adds retarget CPA on top of blended standard CPA', () => {
+    const metrics = calculateMarketingMetrics(
+      googleAdsFixture({
+        campaigns: [
+          {
+            id: 'c1',
+            name: 'Standard',
+            costPerConversion: 3.2,
+            conversionRate: 1,
+            kind: 'standard',
+          },
+          {
+            id: 'c2',
+            name: 'Retarget Kampagne',
+            costPerConversion: 10,
+            conversionRate: 0,
+            kind: 'retarget',
+          },
+        ],
+      }),
+    )
+    expect(metrics.fullyLoadedCac.status).toBe('ok')
+    if (metrics.fullyLoadedCac.status === 'ok') {
+      expect(metrics.fullyLoadedCac.value).toBe(13.2)
+    }
   })
 
   it('leaves CPC unresolved when clicks are missing (not zero)', () => {
