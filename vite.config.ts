@@ -7,7 +7,9 @@ import { defineConfig } from 'vitest/config'
 const rootDir = path.dirname(fileURLToPath(import.meta.url))
 
 // CostMyBusiness Vite + Vitest config — path alias `@/` → `src/`
+// VITE_BASE=/cost/ when embedded under business-ultra.
 export default defineConfig({
+  base: process.env.VITE_BASE || '/',
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {

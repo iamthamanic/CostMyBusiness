@@ -24,6 +24,14 @@ export function AppLayout() {
           className={`mx-auto flex h-14 ${shellMax} items-center justify-between gap-4 px-4`}
         >
           <div className="min-w-0">
+            {import.meta.env.BASE_URL.startsWith('/cost') ? (
+              <a
+                href="/"
+                className="mb-0.5 block text-[11px] text-[color:var(--ink-muted)] hover:text-[color:var(--ink-primary)]"
+              >
+                ← Business Ultra
+              </a>
+            ) : null}
             <p className="truncate text-[15px] font-semibold tracking-tight text-[color:var(--ink-primary)]">
               CostMyBusiness
             </p>
