@@ -58,7 +58,7 @@ export function ProductRootCard({ product, onPricingChange }: Props) {
             Produkt
           </p>
           <input
-            className="mt-0.5 w-full min-w-0 rounded-md border border-[color:var(--line-default)] bg-white px-2 py-1 text-xl font-semibold tracking-tight text-[color:var(--ink-primary)]"
+            className="mt-0.5 w-full min-w-0 rounded-md border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] px-2 py-1 text-xl font-semibold tracking-tight text-[color:var(--ink-primary)]"
             value={nameDraft}
             aria-label="Produktname"
             data-testid="product-root-name"
@@ -70,7 +70,7 @@ export function ProductRootCard({ product, onPricingChange }: Props) {
           />
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
             <select
-              className="h-8 rounded-md border border-[color:var(--line-default)] bg-white px-2 text-sm text-[color:var(--ink-muted)]"
+              className="h-8 rounded-md border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] px-2 text-sm text-[color:var(--ink-muted)]"
               value={product.pricingBasis}
               aria-label="Preisbasis"
               data-testid="product-root-basis"
@@ -87,7 +87,7 @@ export function ProductRootCard({ product, onPricingChange }: Props) {
               ·
             </span>
             <select
-              className="h-8 rounded-md border border-[color:var(--line-default)] bg-white px-2 text-sm text-[color:var(--ink-muted)]"
+              className="h-8 rounded-md border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] px-2 text-sm text-[color:var(--ink-muted)]"
               value={product.currency}
               aria-label="Währung"
               data-testid="product-root-currency"
@@ -107,7 +107,7 @@ export function ProductRootCard({ product, onPricingChange }: Props) {
             Verkaufspreis {product.priceKind === 'gross' ? 'brutto' : 'netto'}
           </span>
           <input
-            className="rounded-md border border-[color:var(--line-default)] bg-white px-3 py-2 font-variant-numeric tabular-nums"
+            className="rounded-md border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] px-3 py-2 font-variant-numeric tabular-nums"
             type="number"
             step="0.01"
             min={0}
@@ -124,7 +124,7 @@ export function ProductRootCard({ product, onPricingChange }: Props) {
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium">MwSt. Satz</span>
           <input
-            className="rounded-md border border-[color:var(--line-default)] bg-white px-3 py-2 font-variant-numeric tabular-nums"
+            className="rounded-md border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] px-3 py-2 font-variant-numeric tabular-nums"
             type="number"
             step="0.01"
             min={0}
@@ -142,7 +142,7 @@ export function ProductRootCard({ product, onPricingChange }: Props) {
         <label className="flex flex-col gap-1 text-sm sm:col-span-2">
           <span className="font-medium">Preisart</span>
           <select
-            className="rounded-md border border-[color:var(--line-default)] bg-white px-3 py-2"
+            className="rounded-md border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] px-3 py-2"
             value={product.priceKind}
             aria-label="Preisart"
             onChange={(e) =>

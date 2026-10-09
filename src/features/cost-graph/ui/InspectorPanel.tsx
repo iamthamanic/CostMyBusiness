@@ -94,7 +94,7 @@ export function InspectorPanel({
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium">Kostenverhalten</span>
           <select
-            className="rounded-md border border-[color:var(--line-default)] bg-white px-3 py-2"
+            className="rounded-md border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] px-3 py-2"
             value={node.costBehavior ?? 'per_order'}
             onChange={(e) =>
               onModelChange(updateNodeBehavior(model, node.id, e.target.value as CostBehavior))

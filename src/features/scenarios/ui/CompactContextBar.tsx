@@ -53,7 +53,7 @@ export function CompactContextBar({ productId, onResolvedValues }: Props) {
       <label className="flex flex-col gap-1 text-sm">
         <span className="font-medium">Szenario</span>
         <select
-          className="min-w-[10rem] rounded-md border border-[color:var(--line-default)] bg-white px-3 py-2"
+          className="min-w-[10rem] rounded-md border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] px-3 py-2"
           value={state.activeContextId}
           aria-label="Szenario"
           onChange={(e) => {
@@ -74,7 +74,7 @@ export function CompactContextBar({ productId, onResolvedValues }: Props) {
       <label className="flex flex-col gap-1 text-sm">
         <span className="font-medium">Zeitraum</span>
         <select
-          className="min-w-[8rem] rounded-md border border-[color:var(--line-default)] bg-white px-3 py-2"
+          className="min-w-[8rem] rounded-md border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] px-3 py-2"
           value={state.period}
           aria-label="Zeitraum"
           onChange={(e) => {

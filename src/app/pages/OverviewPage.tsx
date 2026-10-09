@@ -33,6 +33,13 @@ export function OverviewPage() {
   const workspaceId = useWorkspaceId()
   const [searchParams, setSearchParams] = useSearchParams()
   const paramProductId = searchParams.get('p')
+  const embed = searchParams.get('embed') === '1'
+
+  function setProductParams(next: Record<string, string>, opts?: { replace?: boolean }) {
+    const params: Record<string, string> = { ...next }
+    if (embed) params.embed = '1'
+    setSearchParams(params, opts)
+  }
 
   const [businesses, setBusinesses] = useState<Business[]>([])
   const [products, setProducts] = useState<Product[]>([])
@@ -64,7 +71,43 @@ export function OverviewPage() {
 
   useEffect(() => {
     void (async () => {
-      const { all } = await refreshLists()
+      let { biz, all } = await refreshLists()
+      // Leerer Stand: erstes Produkt aus Halteverbot-Vorlage anlegen (sonst leerer Ghost)
+      if (all.length === 0) {
+        try {
+          let businessId = biz[0]?.id
+          if (!businessId) {
+            const createdBiz = await repos.businesses.create({
+              workspaceId,
+              name: 'Halteverbot123',
+              defaultCurrency: 'EUR',
+            })
+            businessId = createdBiz.id
+          }
+          const template = getShippedTemplate(DEFAULT_TEMPLATE)
+          const created = await repos.products.create({
+            businessId,
+            name: 'Halteverbotszone',
+            currency: 'EUR',
+            sellingPrice: DEFAULT_PRICE,
+            priceKind: 'gross',
+            taxRatePercent: 19,
+            pricingBasis: 'per_order',
+            templateId: template.id,
+            templateVersion: template.version,
+            includedOptionalKeys: defaultIncludedOptionalKeys(template),
+          })
+          ;({ biz, all } = await refreshLists())
+          setProductParams({ p: created.id }, { replace: true })
+          return
+        } catch {
+          setProduct(null)
+          setModel(null)
+          setLoadState('ready')
+          setActionError('Startprodukt konnte nicht angelegt werden. Bitte + nutzen.')
+          return
+        }
+      }
       const stored =
         typeof localStorage !== 'undefined' ? localStorage.getItem(LAST_PRODUCT_KEY) : null
       const target =
@@ -73,7 +116,7 @@ export function OverviewPage() {
         all[0]?.id ||
         null
       if (target && target !== paramProductId) {
-        setSearchParams({ p: target }, { replace: true })
+        setProductParams({ p: target }, { replace: true })
         return
       }
       if (!target) {
@@ -181,7 +224,7 @@ export function OverviewPage() {
         includedOptionalKeys: defaultIncludedOptionalKeys(template),
       })
       await refreshLists()
-      setSearchParams({ p: created.id })
+      setProductParams({ p: created.id })
     } catch {
       setActionError('Produkt konnte nicht angelegt werden.')
     } finally {
@@ -198,9 +241,9 @@ export function OverviewPage() {
       const { all } = await refreshLists()
       if (paramProductId === id) {
         const next = all[0]?.id
-        if (next) setSearchParams({ p: next })
+        if (next) setProductParams({ p: next })
         else {
-          setSearchParams({})
+          setProductParams({})
           setProduct(null)
           setModel(null)
           setLoadState('ready')
@@ -213,7 +256,7 @@ export function OverviewPage() {
   }
 
   function onSelectTab(id: string) {
-    if (id !== paramProductId) setSearchParams({ p: id })
+    if (id !== paramProductId) setProductParams({ p: id })
   }
 
   return (

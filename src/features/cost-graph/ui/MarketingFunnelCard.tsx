@@ -46,7 +46,7 @@ function CampaignFields({
     >
       <div className="mb-1.5 flex items-center justify-between gap-1">
         <input
-          className="min-w-0 flex-1 rounded border border-[color:var(--line-default)] bg-white px-2 py-1 text-xs font-medium"
+          className="min-w-0 flex-1 rounded border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] px-2 py-1 text-xs font-medium"
           value={campaign.name}
           aria-label="Kampagnenname"
           onChange={(e) => onPatch({ name: e.target.value })}
@@ -68,7 +68,7 @@ function CampaignFields({
           Conv.-Rate %
         </span>
         <input
-          className="w-full min-w-0 rounded border border-[color:var(--line-default)] bg-white px-2 py-1 font-variant-numeric text-xs tabular-nums"
+          className="w-full min-w-0 rounded border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] px-2 py-1 font-variant-numeric text-xs tabular-nums"
           type="number"
           min={0}
           step="0.01"
@@ -81,7 +81,7 @@ function CampaignFields({
           }}
         />
         <input
-          className="w-full min-w-0 rounded border border-[color:var(--line-default)] bg-white px-2 py-1 font-variant-numeric text-xs tabular-nums"
+          className="w-full min-w-0 rounded border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] px-2 py-1 font-variant-numeric text-xs tabular-nums"
           type="number"
           min={0}
           max={100}
@@ -169,7 +169,7 @@ export function MarketingFunnelCard({
   return (
     <div className="relative flex flex-col" data-testid={`funnel-stack-${funnel.name}`}>
       <div
-        className={`rounded-[10px] border border-[color:var(--line-default)] bg-white p-2 shadow-[0_1px_0_rgba(23,32,51,0.04)] ${
+        className={`rounded-[10px] border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] p-2 shadow-[0_1px_0_rgba(23,32,51,0.04)] ${
           row.enabled ? '' : 'opacity-60'
         }`}
         data-testid={`funnel-card-${funnel.name}`}
@@ -192,7 +192,7 @@ export function MarketingFunnelCard({
 
           <div className="min-w-0">
             <input
-              className={`w-full min-w-0 rounded border border-[color:var(--line-default)] bg-white px-1.5 py-0.5 text-[13px] font-medium leading-snug ${
+              className={`w-full min-w-0 rounded border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] px-1.5 py-0.5 text-[13px] font-medium leading-snug ${
                 row.enabled
                   ? 'text-[color:var(--ink-primary)]'
                   : 'text-[color:var(--ink-muted)] line-through'
@@ -243,7 +243,7 @@ export function MarketingFunnelCard({
             {menuOpen ? (
               <div
                 role="menu"
-                className="absolute right-0 z-30 mt-1 w-48 rounded-[8px] border border-[color:var(--line-default)] bg-white py-1 shadow-md"
+                className="absolute right-0 z-30 mt-1 w-48 rounded-[8px] border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] py-1 shadow-md"
               >
                 <button
                   type="button"
@@ -298,7 +298,7 @@ export function MarketingFunnelCard({
             )}
             <button
               type="button"
-              className="rounded border border-dashed border-[color:var(--line-default)] bg-white px-2 py-1 text-[11px] text-[color:var(--ink-muted)] hover:border-[color:var(--accent-analysis)] hover:text-[color:var(--accent-analysis)]"
+              className="rounded border border-dashed border-[color:var(--line-default)] bg-[color:var(--surface-panel)] px-2 py-1 text-[11px] text-[color:var(--ink-muted)] hover:border-[color:var(--accent-analysis)] hover:text-[color:var(--accent-analysis)]"
               onClick={() => addCampaign('standard')}
             >
               + Kampagne

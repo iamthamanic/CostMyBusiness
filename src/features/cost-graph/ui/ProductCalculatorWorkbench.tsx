@@ -377,7 +377,7 @@ export function ProductCalculatorWorkbench({
                 <div key={dept.nodeId}>
                   <button
                     type="button"
-                    className="flex w-full items-center justify-between rounded-[12px] border border-[color:var(--line-default)] bg-white px-3 py-3 text-left"
+                    className="flex w-full items-center justify-between rounded-[12px] border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] px-3 py-3 text-left"
                     aria-expanded={open}
                     onClick={() => {
                       setMobileOpen((prev) => {
@@ -490,7 +490,7 @@ export function ProductCalculatorWorkbench({
       </footer>
 
       {showExpertGraph ? (
-        <details className="rounded-[12px] border border-[color:var(--line-default)] bg-white p-3">
+        <details className="rounded-[12px] border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] p-3">
           <summary className="cursor-pointer text-sm font-medium text-[color:var(--ink-muted)]">
             Experten-Graph (React Flow)
           </summary>

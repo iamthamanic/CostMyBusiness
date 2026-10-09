@@ -159,7 +159,7 @@ export function DepartmentColumn({
           </div>
           <button
             type="button"
-            className="rounded border border-[color:var(--line-default)] bg-white px-1.5 py-0.5 text-xs"
+            className="rounded border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] px-1.5 py-0.5 text-xs"
             aria-expanded={!collapsed}
             onClick={onToggleCollapse}
           >
@@ -208,7 +208,7 @@ export function DepartmentColumn({
           <div className="relative mt-auto" ref={addMenuRef}>
             <button
               type="button"
-              className="w-full rounded-md border border-dashed border-[color:var(--line-default)] bg-white/80 px-2 py-1.5 text-xs text-[color:var(--ink-muted)] hover:border-[color:var(--accent-analysis)] hover:text-[color:var(--accent-analysis)]"
+              className="w-full rounded-md border border-dashed border-[color:var(--line-default)] bg-[color:var(--surface-panel)]/80 px-2 py-1.5 text-xs text-[color:var(--ink-muted)] hover:border-[color:var(--accent-analysis)] hover:text-[color:var(--accent-analysis)]"
               data-testid={`add-position-${department.tone}`}
               aria-haspopup={canAddFunnel ? 'menu' : undefined}
               aria-expanded={canAddFunnel ? addMenuOpen : undefined}
@@ -222,7 +222,7 @@ export function DepartmentColumn({
             {canAddFunnel && addMenuOpen ? (
               <div
                 role="menu"
-                className="absolute bottom-full left-0 z-30 mb-1 w-full rounded-[8px] border border-[color:var(--line-default)] bg-white py-1 shadow-md"
+                className="absolute bottom-full left-0 z-30 mb-1 w-full rounded-[8px] border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] py-1 shadow-md"
               >
                 <button
                   type="button"

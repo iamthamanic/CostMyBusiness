@@ -75,7 +75,7 @@ function CostGraphNodeComponent({ data, selected }: NodeProps & { data: FlowNode
                   <span className="tabular-nums">({field.unitDe})</span>
                 </span>
                 <input
-                  className="rounded border border-[color:var(--line-default)] bg-white px-2 py-1 font-variant-numeric tabular-nums"
+                  className="rounded border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] px-2 py-1 font-variant-numeric tabular-nums"
                   type="number"
                   step="any"
                   min={0}

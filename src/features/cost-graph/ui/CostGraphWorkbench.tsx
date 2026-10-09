@@ -273,7 +273,7 @@ function WorkbenchInner({ model, onModelChange, templateId, productId }: Props) 
             <button
               key={d.id}
               type="button"
-              className="rounded-md border border-[color:var(--line-default)] bg-white px-2 py-1 text-xs"
+              className="rounded-md border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] px-2 py-1 text-xs"
               aria-pressed={collapsedDepartments.has(d.id)}
               onClick={() => toggleDepartment(d.id)}
             >

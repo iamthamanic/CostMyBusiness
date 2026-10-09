@@ -34,7 +34,7 @@ export function CostPositionRow({
 
   return (
     <div
-      className={`rounded-[10px] border border-[color:var(--line-default)] bg-white p-2 shadow-[0_1px_0_rgba(23,32,51,0.04)] ${
+      className={`rounded-[10px] border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] p-2 shadow-[0_1px_0_rgba(23,32,51,0.04)] ${
         row.enabled ? '' : 'opacity-60'
       }`}
       data-testid={`cost-row-${row.label}`}
@@ -140,7 +140,7 @@ export function CostPositionRow({
                   <span className="tabular-nums">({field.unitDe})</span>
                 </span>
                 <input
-                  className="w-full min-w-0 rounded border border-[color:var(--line-default)] bg-white px-2 py-1.5 font-variant-numeric tabular-nums"
+                  className="w-full min-w-0 rounded border border-[color:var(--line-default)] bg-[color:var(--surface-panel)] px-2 py-1.5 font-variant-numeric tabular-nums"
                   type="number"
                   step="any"
                   min={0}
